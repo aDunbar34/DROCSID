@@ -16,16 +16,16 @@ public class Server {
 
             PrintWriter out = new PrintWriter(connectionSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+            BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 
             String receivedMessage;
-            while ((receivedMessage = in.readLine()) != null) {
-                System.out.println("Received: '" + receivedMessage + "'");
-                try {
-                    int number = Integer.parseInt(receivedMessage.trim());
-                    number *= 2;
-                    out.println(number);
-                } catch (NumberFormatException e) {
-                    out.println(receivedMessage.toUpperCase());
+            while (true) {
+                receivedMessage = in.readLine();
+                System.out.print("you> ");
+                String message;
+                while ((message = stdIn.readLine()) != null) {
+                    out.println(message);
+                    System.out.println("you> " + message);
                 }
             }
 
