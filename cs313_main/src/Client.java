@@ -21,16 +21,17 @@ public class Client {
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
 
+            // The basic loop - Get a message from stdin,
+            // wait for a response from the server,
+            // print response, repeat
             while (true) {
                 System.out.print("you> ");
 
                 String message;
-                while ((message = stdIn.readLine()) != null) {
+                message = stdIn.readLine();
                     out.println(message);
-                    System.out.println("you> " + message);
                     String response = in.readLine();
                     System.out.println("buddy> " + response);
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();
