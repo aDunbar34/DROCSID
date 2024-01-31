@@ -1,19 +1,18 @@
-
 import java.net.*;
+import java.io.*;
+import java.util.regex.Pattern;
 
-public class TCPClient implements Runnable {
-    private String hostName;
-    private int portNumber;
-
-    public TCPClient(String hostName, int portNumber) {
-        this.hostName = hostName;
-        this.portNumber = portNumber;
-    }
-
+//java EchoServer 7
+public class TCPServer {
     public static void main(String[] args) {
-        String hostName = args[0];
-        int portNumber = Integer.parseInt(args[1]);
-        try (Socket clientSocket = new Socket(hostName, portNumber)) {
+        // Read port number from command line
+        int portNumber = Integer.parseInt(args[0]);
+
+        try {
+            // Create a socket server. Need to say what port this server is listening on.
+            ServerSocket serverSocket = new ServerSocket(portNumber);
+            // Accept a connection from a client
+            Socket clientSocket = serverSocket.accept();
             //Create way of inputting that is capable of threading
             InputRunner inputRunner = new InputRunner(clientSocket);
             //Create way of outputting that is capable of threading
@@ -28,13 +27,10 @@ public class TCPClient implements Runnable {
             while(outputThread.isAlive() && inputThread.isAlive()) {
 
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException ioe) {
+            System.err.println("1/0 error");
+            ioe.printStackTrace();
+            System.exit(1);
         }
-    }
-
-    @Override
-    public void run() {
-
     }
 }
