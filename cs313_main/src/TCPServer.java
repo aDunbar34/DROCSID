@@ -1,6 +1,5 @@
 import java.net.*;
 import java.io.*;
-import java.util.regex.Pattern;
 
 //java EchoServer 7
 public class TCPServer {
@@ -14,12 +13,12 @@ public class TCPServer {
             // Accept a connection from a client
             Socket clientSocket = serverSocket.accept();
             //Create way of inputting that is capable of threading
-            InputRunner inputRunner = new InputRunner(clientSocket);
+            PeerInput peerInput = new PeerInput(clientSocket);
             //Create way of outputting that is capable of threading
-            OutputRunner outputRunner = new OutputRunner(clientSocket);
+            PeerOutput peerOutput = new PeerOutput(clientSocket);
             //Create the threads
-            Thread outputThread = new Thread(outputRunner);
-            Thread inputThread = new Thread(inputRunner);
+            Thread outputThread = new Thread(peerOutput);
+            Thread inputThread = new Thread(peerInput);
             //start the threads
             outputThread.start();
             inputThread.start();

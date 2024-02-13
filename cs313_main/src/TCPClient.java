@@ -15,12 +15,12 @@ public class TCPClient implements Runnable {
         int portNumber = Integer.parseInt(args[1]);
         try (Socket clientSocket = new Socket(hostName, portNumber)) {
             //Create way of inputting that is capable of threading
-            InputRunner inputRunner = new InputRunner(clientSocket);
+            PeerInput peerInput = new PeerInput(clientSocket);
             //Create way of outputting that is capable of threading
-            OutputRunner outputRunner = new OutputRunner(clientSocket);
+            PeerOutput peerOutput = new PeerOutput(clientSocket);
             //Create the threads
-            Thread outputThread = new Thread(outputRunner);
-            Thread inputThread = new Thread(inputRunner);
+            Thread outputThread = new Thread(peerOutput);
+            Thread inputThread = new Thread(peerInput);
             //start the threads
             outputThread.start();
             inputThread.start();
