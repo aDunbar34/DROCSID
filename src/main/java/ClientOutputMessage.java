@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
@@ -33,10 +34,18 @@ public class ClientOutputMessage implements Runnable {
             System.out.println("Waiting for input");
 
             while ((bytesRead = inputStream.read(buffer)) != -1) {
-                String receivedData = new String(buffer, 0, bytesRead);
-                System.out.println("DROCSID user> " + receivedData);
+                Message messageParsed;
+                try{
+                    String receivedData = new String(buffer, 0, bytesRead);
+                    messageParsed = objectMapper.readValue(receivedData, Message.class);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                    throw new InvalidMessageException("Message being parsed is invalid");
+                }
+
+                System.out.println(messageParsed.getSenderId()+"> " + messageParsed.getTextMessage());
             }
-        } catch (IOException e) {
+        } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
     }

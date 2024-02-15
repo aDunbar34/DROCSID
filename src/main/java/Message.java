@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 
 public class Message {
     private final int length;
+
+    @JsonProperty("type")
     private final MessageType type;
     private final String senderId;//Id/username of sender
     private final String targetId;//Id of room
@@ -13,6 +15,15 @@ public class Message {
     private final byte[] payload;
 
     private static final Charset MESSAGE_CHARACTER_SET = StandardCharsets.UTF_8;
+
+    public Message(){
+        length = 0;
+        type = null;
+        senderId = null;
+        targetId = null;
+        timestamp = System.currentTimeMillis();
+        payload = new byte[0];
+    }
 
     public Message(int length, MessageType type, String senderId, String targetId, long timestamp, byte[] payload) {
         this.length = length;
@@ -61,7 +72,6 @@ public class Message {
         return payload;
     }
 
-    @JsonProperty("type")
     public MessageType getType() {
         return type;
     }

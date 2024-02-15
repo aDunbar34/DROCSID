@@ -42,10 +42,4 @@ public class ClientSender implements Runnable {
         }
 
     }
-
-    public static void main(String[] args) throws IOException {
-        Socket clientSocket = new Socket("localhost", 8080);
-        ClientSender client = new ClientSender(clientSocket, "Robbie", "idk");
-        client.run();
-    }
 }

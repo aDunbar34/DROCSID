@@ -46,15 +46,18 @@ public class NonBlockingServer implements Runnable {
                     if (key.isAcceptable()) {
                         acceptConnection(serverSocketChannel, selector);
                     } else if (key.isReadable()) {
-                        queueOfMessageToBeRead.put(getMessageFromKey(key));
+                        try{
+                            queueOfMessageToBeRead.put(getMessageFromKey(key));
+                        }catch (InvalidMessageException e){
+                            e.printStackTrace();
+                        }
+
                     }
                 }
             }
         } catch (ClosedChannelException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidMessageException e) {
             throw new RuntimeException(e);
         } catch (ClientDisconnectException e) {
             throw new RuntimeException(e);
@@ -143,8 +146,13 @@ public class NonBlockingServer implements Runnable {
                 messageParsed = objectMapper.readValue(message, Message.class);
                 System.out.println(messageParsed.getSenderId());
             } catch (JsonProcessingException e) {
+                e.printStackTrace();
                 throw new InvalidMessageException("Message being parsed is invalid");
             }
+            if(messageParsed.getType().equals(MessageType.INITIALISATION)){//on initialisation you add to the connected clients
+                addConnectedClient(clientChannel, messageParsed.getSenderId());
+            }
+            return messageParsed;
         }
         throw new InvalidMessageException("Message is empty");
     }

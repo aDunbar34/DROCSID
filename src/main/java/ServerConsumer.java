@@ -36,10 +36,13 @@ public class ServerConsumer extends Thread{
                         clientsInRoom.remove(senderData);//remove the client that sent it as they already will have the message
                         for (ClientData clientInRoom: clientsInRoom){//send the message to all the clients currently in that room
                             byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(message);
+                            System.out.println("Sending message: "+message.getTextMessage()+ " to "+clientInRoom.getUsername() +" in room: "+clientInRoom.getCurrentRoom());
                             nonBlockingServer.writeDataToClient(clientInRoom.getUserChannel(), messageAsByteJSON);
+
                         }
                     }
                     case SELECT_ROOM -> {//select rooms so that we send the message to the user(s) only if they are currently in that room, else we save to history and send message when history
+                        System.out.println("Changed user: " + senderData.getUsername() +" room to: " + message.getTargetId() +" from: "+senderData.getCurrentRoom());
                         senderData.setCurrentRoom(message.getTargetId());//TODO: potential bug here as i am getting confused with pass by reference and pass by copy
                     }
                     case ROOMS -> {//return all rooms available to user
