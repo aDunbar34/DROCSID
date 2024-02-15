@@ -17,11 +17,12 @@ public class Client {
 
         String hostname = args[0];
         int portNo = Integer.parseInt(args[1]);
+        String username = args[2]; //used to uniquely identify user
 
         System.out.println("Attempting to connect to client '" + hostname + "' on port " + portNo + "...");
         try (Socket socket = new Socket(hostname, portNo)) {
             System.out.println("Connection established! Enjoy your chat!");
-            chatLoop(socket);
+            chatLoop(socket, username);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -29,9 +30,9 @@ public class Client {
     }
 
     // Sets up threads and runs the primary chat loop
-    public static void chatLoop(Socket socket) {
-        PeerInput peerInput = new PeerInput(socket);
-        PeerOutput peerOutput = new PeerOutput(socket);
+    public static void chatLoop(Socket socket, String username) {
+        ClientSender peerInput = new ClientSender(socket, username, "test");
+        ClientOutputMessage peerOutput = new ClientOutputMessage(socket);
 
         Thread inputThread = new Thread(peerInput);
         Thread outputThread = new Thread(peerOutput);
