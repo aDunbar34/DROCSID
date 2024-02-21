@@ -4,6 +4,9 @@ import java.net.*;
 
 /**
  *Main Client used for communication to the drocsid server
+ *
+ * @author Euan Gilmour
+ * @author Robbie Booth
  */
 public class Client {
 

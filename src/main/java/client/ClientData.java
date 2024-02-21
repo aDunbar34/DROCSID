@@ -4,6 +4,10 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * The data associated with the client
+ * @author Robbie Booth
+ */
 public class ClientData {
     private String username;
     private SocketChannel userChannel;
@@ -47,6 +51,8 @@ public class ClientData {
 
     /**
      * Removes the room and if the users current room is that room it sets the current room to null
+     *
+     * @author Robbie Booth
      * */
     public void removeRoom(String room){
         if(currentRoom.equals(room)){

@@ -10,6 +10,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+ * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
+ * the server socket given {@link #socket}.
+ *
+ * @author Robbie Booth
+ */
 public class ClientProducer implements Runnable {
     private Socket socket = null;
     private String username = null;
@@ -26,14 +32,16 @@ public class ClientProducer implements Runnable {
     public void run() {
         try {
             //Initialise
-
             BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             Message initialisationMessage = new Message(0, MessageType.INITIALISATION, username, (String) null, System.currentTimeMillis(), "");
             out.println(objectMapper.writeValueAsString(initialisationMessage));
 
+            //Select room
+            //In future this will allow room choosing
             initialisationMessage = new Message(0, MessageType.SELECT_ROOM, username, "test", System.currentTimeMillis(), "");
             out.println(objectMapper.writeValueAsString(initialisationMessage));
+
             // Reads string from client and sends it back to the client String inputLine;
             System.out.println("Enter a message:");
             String message;

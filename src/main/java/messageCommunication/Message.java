@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 
 /**
- * Used in communication with the server in the drocsid application
+ * Used in communication with the server in the drocsid application.
  * Contains the information that is passed to the server and back to client.
  *
  * @author Robbie Booth

@@ -42,8 +42,6 @@ public class Server implements Runnable {
         }
     }
 
-    //Creates a server with port number given at your ip address
-
     /**
      * Creates a {@link Server} on the computer IP address with the port number given
      * @param args Port number of server to be made

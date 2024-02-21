@@ -9,6 +9,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 
+/**
+ * Listens to the servers socket {@link #socket} and outputs the appropriate message to the users terminal if message received
+ *
+ * @author Robbie Booth
+ * @see Message
+ */
 public class ClientConsumer implements Runnable {
     private Socket socket = null;
     private ObjectMapper objectMapper = new ObjectMapper();

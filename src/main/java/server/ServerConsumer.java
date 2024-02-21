@@ -9,6 +9,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+
+/**
+ * Creates a server consumer thread that reads the nonblocking queue of messages that the server has received and does an appropriate action dependent on this.
+ * @author Robbie Booth
+ */
 public class ServerConsumer extends Thread{
     LinkedBlockingQueue<Message> q;
     NonBlockingServerProducer nonBlockingServer;
@@ -23,7 +28,6 @@ public class ServerConsumer extends Thread{
 
     @Override
     public void run() {
-        String x;
         while(true){
             try {
                 //get message from key

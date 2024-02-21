@@ -16,6 +16,12 @@ import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
+
+/**
+ * A non-blocking producer that reads the servers incoming messages and adds the message to the queue for the consumers
+ * or if new client connected, it initiates that connection.
+ * @author Robbie Booth
+ */
 public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
@@ -41,7 +47,7 @@ public class NonBlockingServerProducer implements Runnable {
             Selector selector = Selector.open();
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            System.out.println("server.Server started on port 8080");
+            System.out.println("Server started on port" + portNumber);
 
             while (true) {
                 selector.select();
@@ -54,14 +60,14 @@ public class NonBlockingServerProducer implements Runnable {
                     keyIterator.remove();
 
                     if (key.isAcceptable()) {
-                        acceptConnection(serverSocketChannel, selector);
+                        acceptConnection(serverSocketChannel, selector);//on new connection it starts up it
                     } else if(key.isValid() && key.isReadable()){//Checks if key is still active and is readable
                         try{
-                            queueOfMessageToBeRead.put(getMessageFromKey(key));
+                            queueOfMessageToBeRead.put(getMessageFromKey(key));//gets the message and adds it to the queue for consumers
                         }catch (InvalidMessageException e){
                             e.printStackTrace();
                         }catch (SocketException e){
-                            closeConnection(key);
+                            closeConnection(key);//on the connection exit of a client it closes that connection
                         }
 
                     }
@@ -80,6 +86,7 @@ public class NonBlockingServerProducer implements Runnable {
 
     /**
     * @return The connected clients data or null if not connected
+     * @author Robbie Booth
     * */
     public synchronized ClientData getClientData(String username){
         return connectedClients.get(username);
@@ -89,6 +96,7 @@ public class NonBlockingServerProducer implements Runnable {
      *
      * @param room the room to be searched
      * @return A list of connected clients in the room given
+     * @author Robbie Booth
      * */
     public synchronized List<ClientData> getClientsInRoom(String room){
         List<ClientData> clientsInRoom = new ArrayList<>();
@@ -100,6 +108,13 @@ public class NonBlockingServerProducer implements Runnable {
         return clientsInRoom;
     }
 
+    /**
+     * Closes the connection of the key parameter and removes the client associates from the {@link #connectedClients}.
+     *
+     * @param key the selection key of the socket channel to be removed
+     * @throws IOException
+     * @author Robbie Booth
+     */
     private void closeConnection(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
         for (ClientData clientData:connectedClients.values()
@@ -119,42 +134,13 @@ public class NonBlockingServerProducer implements Runnable {
         System.out.println("New client connected: " + clientChannel.getRemoteAddress());
     }
 
-    public void readDataFromClient(SelectionKey key) throws IOException {
-        SocketChannel clientChannel = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        int bytesRead = clientChannel.read(buffer);
-
-        if (bytesRead == -1) {
-            // Connection closed by client
-            key.cancel();
-            clientChannel.close();
-            System.out.println("client.Client disconnected: " + clientChannel.getRemoteAddress());
-        } else if (bytesRead > 0) {
-            buffer.flip();
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
-            String message = new String(data);
-            System.out.println("Received from client " + clientChannel.getRemoteAddress() + ": " + message);
-
-            // Example response to the client
-            String responseMessage = "Hello, client!";
-            writeDataToClient(clientChannel, responseMessage.getBytes());
-        }
-    }
-
-
     /**
      * Takes the message and returns it if on the channel
      * @return the message object given in the channel
+     * @author Robbie Booth
      * */
     public Message getMessageFromKey(SelectionKey key) throws InvalidMessageException, ClientDisconnectException, IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
-//        System.out.println(clientChannel.isConnected());
-//        System.out.println(clientChannel.isOpen());
-//        System.out.println(clientChannel.isRegistered());
-//        if(!clientChannel.){
-//            throw new customExceptions.ClientDisconnectException("client.Client Disconnected");
-//        }
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         int bytesRead = clientChannel.read(buffer);
 
@@ -187,9 +173,16 @@ public class NonBlockingServerProducer implements Runnable {
         throw new InvalidMessageException("messageCommunication.Message is empty");
     }
 
+    /**
+     * Adds the connected client to {@link #connectedClients} if not already there
+     * @param clientChannel socket channel of the client
+     * @param username the unique username of the client
+     * @author Robbie Booth
+     */
     public void addConnectedClient(SocketChannel clientChannel, String username){
         //TODO make system to read rooms that client is in from saved
         //TODO make check that client current room isn't null else where as it will be null here
+        //TODO make error if client is already connected and kill connection with the client trying to impersonate
         if(connectedClients.containsKey(username)){
             return;
         }
@@ -197,10 +190,17 @@ public class NonBlockingServerProducer implements Runnable {
         connectedClients.put(username, clientData);
     }
 
+    /**
+     * Messages the client channel given with the data given
+     * @param clientChannel client channel to be messaged
+     * @param data data to be sent to client channel
+     * @throws IOException
+     * @author Robbie Booth
+     */
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         clientChannel.write(buffer);
-        System.out.println("Messaged client.Client");
+        System.out.println("Messaged Client");
     }
 
 
