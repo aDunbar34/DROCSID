@@ -1,5 +1,12 @@
+package server;
+
+import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import customExceptions.ClientDisconnectException;
+import customExceptions.InvalidMessageException;
+import messageCommunication.Message;
+import messageCommunication.MessageType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,16 +16,18 @@ import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class NonBlockingServer implements Runnable {
+public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
 
     LinkedBlockingQueue<Message> queueOfMessageToBeRead;
+    private final int portNumber;
 
 
-    public NonBlockingServer(LinkedBlockingQueue<Message> queue)  {
+    public NonBlockingServerProducer(LinkedBlockingQueue<Message> queue, int portNumber)  {
         queueOfMessageToBeRead = queue;
         connectedClients = new HashMap<String, ClientData>();
+        this.portNumber = portNumber;
 
     }
 
@@ -26,13 +35,13 @@ public class NonBlockingServer implements Runnable {
     public void run() {
         try{
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-            serverSocketChannel.bind(new InetSocketAddress(8080));
+            serverSocketChannel.bind(new InetSocketAddress(portNumber));//Creates a server socket where the ip address is the location and the port number
             serverSocketChannel.configureBlocking(false);
 
             Selector selector = Selector.open();
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            System.out.println("Server started on port 8080");
+            System.out.println("server.Server started on port 8080");
 
             while (true) {
                 selector.select();
@@ -119,7 +128,7 @@ public class NonBlockingServer implements Runnable {
             // Connection closed by client
             key.cancel();
             clientChannel.close();
-            System.out.println("Client disconnected: " + clientChannel.getRemoteAddress());
+            System.out.println("client.Client disconnected: " + clientChannel.getRemoteAddress());
         } else if (bytesRead > 0) {
             buffer.flip();
             byte[] data = new byte[buffer.remaining()];
@@ -144,7 +153,7 @@ public class NonBlockingServer implements Runnable {
 //        System.out.println(clientChannel.isOpen());
 //        System.out.println(clientChannel.isRegistered());
 //        if(!clientChannel.){
-//            throw new ClientDisconnectException("Client Disconnected");
+//            throw new customExceptions.ClientDisconnectException("client.Client Disconnected");
 //        }
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         int bytesRead = clientChannel.read(buffer);
@@ -153,8 +162,8 @@ public class NonBlockingServer implements Runnable {
             // Connection closed by client
             key.cancel();
             clientChannel.close();
-            System.out.println("Client disconnected: " + clientChannel.getRemoteAddress());
-            throw new ClientDisconnectException("Client has been disconnected");
+            System.out.println("client.Client disconnected: " + clientChannel.getRemoteAddress());
+            throw new ClientDisconnectException("client.Client has been disconnected");
         } else if (bytesRead > 0) {
             buffer.flip();
             byte[] data = new byte[buffer.remaining()];
@@ -168,14 +177,14 @@ public class NonBlockingServer implements Runnable {
                 System.out.println(messageParsed.getSenderId());
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
-                throw new InvalidMessageException("Message being parsed is invalid");
+                throw new InvalidMessageException("messageCommunication.Message being parsed is invalid");
             }
             if(messageParsed.getType().equals(MessageType.INITIALISATION)){//on initialisation you add to the connected clients
                 addConnectedClient(clientChannel, messageParsed.getSenderId());
             }
             return messageParsed;
         }
-        throw new InvalidMessageException("Message is empty");
+        throw new InvalidMessageException("messageCommunication.Message is empty");
     }
 
     public void addConnectedClient(SocketChannel clientChannel, String username){
@@ -191,7 +200,7 @@ public class NonBlockingServer implements Runnable {
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         clientChannel.write(buffer);
-        System.out.println("Messaged Client");
+        System.out.println("Messaged client.Client");
     }
 
 

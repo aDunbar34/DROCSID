@@ -1,8 +1,13 @@
+package messageCommunication;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/**
+ * Interpreted by the server to understand what the context of message it's attached to is
+ *
+ * @author Robbie Booth
+ */
 public enum MessageType {
     TEXT,
     ROOMS,
@@ -22,7 +27,7 @@ public enum MessageType {
                 return messageType;
             }
         }
-        throw new IllegalArgumentException("Invalid MessageType: " + value);
+        throw new IllegalArgumentException("Invalid messageCommunication.MessageType: " + value);
     }
 
 }//for future

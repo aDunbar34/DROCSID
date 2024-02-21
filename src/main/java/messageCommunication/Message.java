@@ -1,9 +1,18 @@
+package messageCommunication;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+
+/**
+ * Used in communication with the server in the drocsid application
+ * Contains the information that is passed to the server and back to client.
+ *
+ * @author Robbie Booth
+ */
 public class Message {
     private final int length;
 
@@ -12,6 +21,8 @@ public class Message {
     private final String senderId;//Id/username of sender
     private final String targetId;//Id of room
     private final long timestamp;
+
+
     private final byte[] payload;
 
     private static final Charset MESSAGE_CHARACTER_SET = StandardCharsets.UTF_8;

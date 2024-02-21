@@ -1,31 +1,23 @@
+package client;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import customExceptions.InvalidMessageException;
+import messageCommunication.Message;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.Socket;
 
-public class ClientOutputMessage implements Runnable {
+public class ClientConsumer implements Runnable {
     private Socket socket = null;
     private ObjectMapper objectMapper = new ObjectMapper();
-    public ClientOutputMessage(Socket socket) {
+    public ClientConsumer(Socket socket) {
         this.socket = socket;
     }
 
     @Override
     public void run() {
-//        try {
-//            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//            String inputLine;
-//            System.out.println("Waiting for input");
-//            while ((inputLine = in.readLine()) != null) {
-//                System.out.println("DROCSID user> " + inputLine);
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
         try {
             InputStream inputStream = socket.getInputStream();
             byte[] buffer = new byte[1024];

@@ -1,3 +1,5 @@
+package client;
+
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Set;
@@ -7,6 +9,12 @@ public class ClientData {
     private SocketChannel userChannel;
     private Set<String> userRooms;
     private String currentRoom;
+
+    public ClientData(String username, Set<String> userRooms, String currentRoom) {
+        this.username = username;
+        this.userRooms = userRooms;
+        this.currentRoom = currentRoom;
+    }
 
     public ClientData(String username, SocketChannel userChannel, Set<String> userRooms) {
         this.username = username;

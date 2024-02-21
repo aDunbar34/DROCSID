@@ -1,19 +1,21 @@
+package server;
+
+import client.ClientData;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import messageCommunication.Message;
+import messageCommunication.MessageType;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.channels.SelectionKey;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ServerConsumer extends Thread{
     LinkedBlockingQueue<Message> q;
-    NonBlockingServer nonBlockingServer;
+    NonBlockingServerProducer nonBlockingServer;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public ServerConsumer(LinkedBlockingQueue<Message> q, NonBlockingServer nonBlockingServer){
+    public ServerConsumer(LinkedBlockingQueue<Message> q, NonBlockingServerProducer nonBlockingServer){
         super();
         this.q = q;
         this.nonBlockingServer = nonBlockingServer;
@@ -27,7 +29,7 @@ public class ServerConsumer extends Thread{
                 //get message from key
                 //appropriately treat message
                 //return values to output socket location
-                Message message = q.take();
+                Message message = q.take();//Thread will wait here
                 ClientData senderData = nonBlockingServer.getClientData(message.getSenderId());
                 switch (message.getType()){
                     case TEXT -> {//add text to the room the user currently is in and send to other users in that room

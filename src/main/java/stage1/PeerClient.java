@@ -1,3 +1,5 @@
+package stage1;
+
 import java.net.*;
 
 public class PeerClient {

@@ -1,4 +1,8 @@
+package client;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import messageCommunication.Message;
+import messageCommunication.MessageType;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,14 +10,14 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClientSender implements Runnable {
+public class ClientProducer implements Runnable {
     private Socket socket = null;
     private String username = null;
 
     private String chatRoomId = null;
     ObjectMapper objectMapper = new ObjectMapper();
 
-    public ClientSender(Socket socket, String username, String chatRoomId) {
+    public ClientProducer(Socket socket, String username, String chatRoomId) {
         this.socket = socket;
         this.username = username;
         this.chatRoomId = chatRoomId;
