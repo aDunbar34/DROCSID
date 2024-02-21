@@ -3,6 +3,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
@@ -45,11 +46,13 @@ public class NonBlockingServer implements Runnable {
 
                     if (key.isAcceptable()) {
                         acceptConnection(serverSocketChannel, selector);
-                    } else if (key.isReadable()) {
+                    } else if(key.isValid() && key.isReadable()){//Checks if key is still active and is readable
                         try{
                             queueOfMessageToBeRead.put(getMessageFromKey(key));
                         }catch (InvalidMessageException e){
                             e.printStackTrace();
+                        }catch (SocketException e){
+                            closeConnection(key);
                         }
 
                     }
@@ -86,6 +89,18 @@ public class NonBlockingServer implements Runnable {
             }
         }
         return clientsInRoom;
+    }
+
+    private void closeConnection(SelectionKey key) throws IOException {
+        SocketChannel clientChannel = (SocketChannel) key.channel();
+        for (ClientData clientData:connectedClients.values()
+             ) {
+            if(clientData.getUserChannel().equals(clientChannel)){
+                connectedClients.remove(clientData.getUsername());
+            }
+
+        }
+        clientChannel.close();
     }
 
     private void acceptConnection(ServerSocketChannel serverSocketChannel, Selector selector) throws IOException {
@@ -125,6 +140,12 @@ public class NonBlockingServer implements Runnable {
      * */
     public Message getMessageFromKey(SelectionKey key) throws InvalidMessageException, ClientDisconnectException, IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
+//        System.out.println(clientChannel.isConnected());
+//        System.out.println(clientChannel.isOpen());
+//        System.out.println(clientChannel.isRegistered());
+//        if(!clientChannel.){
+//            throw new ClientDisconnectException("Client Disconnected");
+//        }
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         int bytesRead = clientChannel.read(buffer);
 
