@@ -14,6 +14,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -89,6 +90,7 @@ public class ClientProducer implements Runnable {
 
             switch (commandArgs[0]) {
                 case "\\files" -> showFiles();
+                case "\\play" -> playVideo(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
             }
@@ -130,6 +132,46 @@ public class ClientProducer implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+    }
+
+    /**
+     * Prepares and plays a video via VideoPlayer
+     *
+     * @param args the args the command was called with
+     *
+     * @author Euan Gilmour
+     */
+    private void playVideo(String[] args) {
+
+        // Check for incorrect number of arguments
+        if (args.length != 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\play <filename>");
+            return;
+        }
+
+        // Get filename
+        String fileName = args[1];
+
+        // Verify that file exists
+        Path filesDirectory = Paths.get(System.getProperty("user.dir"), "drocsidFiles");
+        Path filePath = filesDirectory.resolve(fileName);
+        if (!(Files.exists(filePath) && Files.isRegularFile(filePath))) {
+            System.out.println("Error trying to play file '" + fileName + "': no such file exists.");
+            return;
+        }
+
+        // Verify that file is a valid video file
+        String[] videoExtensions = {".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".mpeg", ".mpg"};
+        if (Arrays.stream(videoExtensions).noneMatch(fileName::endsWith)) {
+            System.out.println("Error trying to play file '" + fileName + "': file is not a valid video file");
+            return;
+        }
+
+        // Set up VideoPlayer and play video
+        VideoPlayer videoPlayer = new VideoPlayer();
+        videoPlayer.playVideo(filePath.toString());
 
     }
 
