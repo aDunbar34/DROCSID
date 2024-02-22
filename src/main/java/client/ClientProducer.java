@@ -10,6 +10,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Iterator;
 
 /**
  * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
@@ -83,12 +88,49 @@ public class ClientProducer implements Runnable {
             String[] commandArgs = userInput.split(" ");
 
             switch (commandArgs[0]) {
+                case "\\files" -> showFiles();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
             }
         } else { // Treat input as message
             sendTextMessage(userInput);
         }
+    }
+
+    /**
+     * Prints a list of files in the drocsidFiles directory.
+     * If no such directory exists, it creates it.
+     */
+    private void showFiles() {
+
+        // Construct path to files directory
+        Path filesDirectory = Paths.get(System.getProperty("user.dir"), "drocsidFiles");
+
+        // Create directory if it does not exist
+        if (!Files.exists(filesDirectory)) {
+            try {
+                Files.createDirectory(filesDirectory);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Display filenames
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(filesDirectory)) {
+            Iterator<Path> iterator = directoryStream.iterator();
+            if (iterator.hasNext()) {
+                System.out.println("Files:");
+                while (iterator.hasNext()) {
+                    Path filePath = iterator.next();
+                    System.out.println(filePath.getFileName().toString());
+                }
+            } else {
+                System.out.println("No files!");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     /**
