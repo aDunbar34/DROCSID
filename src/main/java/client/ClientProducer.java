@@ -92,6 +92,7 @@ public class ClientProducer implements Runnable {
                 case "\\files" -> showFiles();
                 case "\\view" -> viewImage(commandArgs);
                 case "\\play" -> playVideo(commandArgs);
+                case "\\sendFile" -> sendFile(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
             }
@@ -213,6 +214,71 @@ public class ClientProducer implements Runnable {
         // Set up VideoPlayer and play video
         VideoPlayer videoPlayer = new VideoPlayer();
         videoPlayer.playVideo(filePath.toString());
+
+    }
+
+    /**
+     * Prepares a new FileSender thread to send a file
+     * and prepares and sends a FILE_SEND_SIGNAL Message
+     *
+     * @param args The args the command was called with.
+     *
+     * @author Euan Gilmour
+     */
+    private void sendFile(String[] args) {
+
+        // Check for incorrect number of arguments
+        if (args.length != 4) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\sendFile <pathToFile> <recipientUsername> <portNo>");
+            return;
+        }
+
+        // Unpack args
+        String pathString = args[1];
+        String recipient = args[2];
+        int portNo;
+        try {
+            portNo = Integer.parseInt(args[3]);
+        } catch (NumberFormatException e) {
+            System.out.println("ERROR: Port must be a number.");
+            System.out.println("USAGE: \\sendFile <pathToFile> <recipientUsername> <portNo>");
+            return;
+        }
+
+        // Verify that file exists
+        Path filePath = Paths.get(pathString);
+        if (!(Files.exists(filePath) && Files.isRegularFile(filePath))) {
+            System.out.println("ERROR: The given path is incorrect or file does not exist.");
+            System.out.println("USAGE: \\sendFile <pathToFile> <recipientUsername> <portNo>");
+            return;
+        }
+
+        // Verify that file is under the size limit
+        int sizeLimit = 104857600; // 100 MB in bytes
+        try {
+            if (Files.size(filePath) > sizeLimit) {
+                System.out.println("ERROR: The file is over the size limit of 100MB");
+                return;
+            }
+        } catch (IOException e) {
+            System.out.println("ERROR: something went wrong while assessing the size of the file.");
+            return;
+        }
+
+        // All validation checks passed, spin up a new FileSender thread
+        Thread fileSender = new Thread(new FileSender(filePath.toFile(), portNo));
+        fileSender.start();
+
+        // Prepare and send new FILE_SEND_SIGNAL Message to the server
+        String fileName = filePath.getFileName().toString();
+        String payload = fileName + ',' + recipient + ',' + portNo;
+        Message fileSendSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomId, System.currentTimeMillis(), payload);
+        try {
+            out.println(objectMapper.writeValueAsString(fileSendSignalMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("ERROR: Something went wrong while trying to send a FILE_SEND_SIGNAL message to the server");
+        }
 
     }
 
