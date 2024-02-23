@@ -90,6 +90,7 @@ public class ClientProducer implements Runnable {
 
             switch (commandArgs[0]) {
                 case "\\files" -> showFiles();
+                case "\\view" -> viewImage(commandArgs);
                 case "\\play" -> playVideo(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
@@ -132,6 +133,46 @@ public class ClientProducer implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+    }
+
+    /**
+     * Prepares and displays an image via ImageViewer
+     *
+     * @param args the args the command was called with
+     *
+     * @author Euan Gilmour
+     */
+    private void viewImage(String[] args) {
+
+        // Check for incorrect number of arguments
+        if (args.length != 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\view <filename>");
+            return;
+        }
+
+        // Get filename
+        String fileName = args[1];
+
+        // Verify that file exists
+        Path filesDirectory = Paths.get(System.getProperty("user.dir"), "drocsidFiles");
+        Path filePath = filesDirectory.resolve(fileName);
+        if (!(Files.exists(filePath) && Files.isRegularFile(filePath))) {
+            System.out.println("Error trying to view file '" + fileName + "': no such file exists.");
+            return;
+        }
+
+        // Verify that file is a valid image file
+        String[] imageExtensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff"};
+        if (Arrays.stream(imageExtensions).noneMatch(fileName::endsWith)) {
+            System.out.println("Error trying to view file '" + fileName + "': file is not a valid image file");
+            return;
+        }
+
+        // Set up ImageViewer and view image
+        ImageViewer imageViewer = new ImageViewer();
+        imageViewer.viewImage(filePath.toString());
 
     }
 
