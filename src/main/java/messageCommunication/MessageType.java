@@ -15,8 +15,8 @@ public enum MessageType {
 
     SELECT_ROOM,
 
-    SEND_FILE_SIGNAL,
-    RECEIVE_FILE_SIGNAL;
+    FILE_SEND_SIGNAL,
+    FILE_RECEIVE_SIGNAL;
 
     @JsonValue
     public String toJson() {
