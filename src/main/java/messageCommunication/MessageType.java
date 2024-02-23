@@ -13,7 +13,10 @@ public enum MessageType {
     ROOMS,
     INITIALISATION,
 
-    SELECT_ROOM;
+    SELECT_ROOM,
+
+    SEND_FILE_SIGNAL,
+    RECEIVE_FILE_SIGNAL;
 
     @JsonValue
     public String toJson() {
