@@ -5,6 +5,8 @@ import java.awt.*;
 
 /**
  * Displays an image in a frame
+ *
+ * @author Euan Gilmour
  */
 public class ImageViewer {
 
@@ -20,6 +22,8 @@ public class ImageViewer {
      * Displays an image in the frame.
      *
      * @param imagePath The path to the image file.
+     *
+     * @author Euan Gilmour
      */
     public void viewImage(String imagePath) {
 
