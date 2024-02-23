@@ -25,6 +25,7 @@ public class VideoPlayer {
         frame = new JFrame();
         frame.setSize(800, 600);
         frame.setContentPane(mediaPlayer);
+        frame.setTitle("Video Player");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override
