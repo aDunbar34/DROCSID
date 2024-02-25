@@ -19,15 +19,13 @@ public class FileSender implements Runnable {
     private final File file;
     private final int portNo;
     private final String recipientUsername;
-    private final int TIMEOUT;
-    private final int BUFFER_SIZE;
+    private static final int TIMEOUT = 60000; // 60 seconds
+    private static final int BUFFER_SIZE = 4096; // 4 KB
 
     public FileSender(File file, int portNo, String recipientUsername) {
         this.file = file;
         this.portNo = portNo;
         this.recipientUsername = recipientUsername;
-        this.TIMEOUT = 60000; // 60 seconds
-        this.BUFFER_SIZE = 4096; // 4 KB
     }
 
     @Override
