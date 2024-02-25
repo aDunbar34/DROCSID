@@ -6,6 +6,7 @@ import messageCommunication.Message;
 import messageCommunication.MessageType;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -62,6 +63,7 @@ public class ServerConsumer extends Thread{
 //                        nonBlockingServer.addConnectedClient(keyOfMessage, message.getSenderId());
                         //TODO error here
                     }
+                    case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
                     //eventually add a create room
                     default -> {
 
@@ -73,5 +75,41 @@ public class ServerConsumer extends Thread{
                 throw new RuntimeException(e);
             }
         }
+    }
+
+
+    /**
+     * Parses the message for file transfer parameters and
+     * sends new FILE_RECEIVE_SIGNAL to the correct client
+     *
+     * @param message the message
+     */
+    private void handleFileSendSignal(Message message) throws IOException {
+
+        // Parse message payload
+        String[] fileTransferDetails = message.getTextMessage().split(",");
+        String fileName = fileTransferDetails[0];
+        String recipientUsername = fileTransferDetails[1];
+        String portNo = fileTransferDetails[2];
+
+        ClientData senderData = nonBlockingServer.getClientData(message.getSenderId());
+
+        // Search for recipient
+        List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(senderData.getCurrentRoom());
+        for (ClientData client : clientsInRoom) {
+            if (client.getUsername().equals(recipientUsername)) {
+
+                System.out.println("Handling file transfer signals between sender <" + message.getSenderId() + "> and receiver <" + recipientUsername + ">");
+
+                // Prepare and send new FILE_RECEIVE_SIGNAL
+                String senderHost = ((InetSocketAddress) senderData.getUserChannel().getRemoteAddress()).getHostString();
+                String payload = senderHost + ',' + portNo + ',' + fileName;
+                Message fileReceiveSignal = new Message(0, MessageType.FILE_RECEIVE_SIGNAL, message.getSenderId(), senderData.getCurrentRoom(), System.currentTimeMillis(), payload);
+                byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(fileReceiveSignal);
+                nonBlockingServer.writeDataToClient(client.getUserChannel(), messageAsByteJSON);
+
+            }
+        }
+
     }
 }
