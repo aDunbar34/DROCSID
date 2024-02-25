@@ -68,6 +68,8 @@ public class ClientConsumer implements Runnable {
      * prepares new FileReceiver thread
      *
      * @param message the message
+     *
+     * @author Euan Gilmour
      */
     private void handleFileReceiveSignalMessage(Message message) {
 
