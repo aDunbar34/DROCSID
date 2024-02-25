@@ -267,7 +267,7 @@ public class ClientProducer implements Runnable {
         }
 
         // All validation checks passed, spin up a new FileSender thread
-        Thread fileSender = new Thread(new FileSender(filePath.toFile(), portNo));
+        Thread fileSender = new Thread(new FileSender(filePath.toFile(), portNo, recipient));
         fileSender.start();
 
         // Prepare and send new FILE_SEND_SIGNAL Message to the server
