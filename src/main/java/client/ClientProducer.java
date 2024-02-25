@@ -115,7 +115,7 @@ public class ClientProducer implements Runnable {
             try {
                 Files.createDirectory(filesDirectory);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println("ERROR: Something went wrong while trying to create files directory");
             }
         }
 
@@ -132,7 +132,7 @@ public class ClientProducer implements Runnable {
                 System.out.println("No files!");
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("ERROR: Something went wrong while trying to view the files directory");
         }
 
     }
