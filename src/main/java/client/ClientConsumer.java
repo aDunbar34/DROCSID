@@ -41,10 +41,50 @@ public class ClientConsumer implements Runnable {
                     throw new InvalidMessageException("Message being parsed is invalid");
                 }
 
-                System.out.println(messageParsed.getSenderId()+"> " + messageParsed.getTextMessage());
+                // Route message to appropriate handler function
+                switch (messageParsed.getType()) {
+                    case TEXT -> handleTextMessage(messageParsed);
+                    case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
+                }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Prints the text content of the message
+     *
+     * @param message the message
+     *
+     * @author Robbie Booth
+     */
+    private void handleTextMessage(Message message) {
+        System.out.println(message.getSenderId()+"> " + message.getTextMessage());
+    }
+
+    /**
+     * Parses the payload of the message for necessary data and
+     * prepares new FileReceiver thread
+     *
+     * @param message the message
+     *
+     * @author Euan Gilmour
+     */
+    private void handleFileReceiveSignalMessage(Message message) {
+
+        String senderUsername = message.getSenderId();
+
+        // Parse message payload for file transfer parameters
+        String messageContent = message.getTextMessage();
+        String[] fileTransferDetails = messageContent.split(",");
+        String senderHost = fileTransferDetails[0];
+        int portNo = Integer.parseInt(fileTransferDetails[1]);
+        String fileName = fileTransferDetails[2];
+
+        // Prepare and start a new FileReceiver thread
+        Thread fileReceiver = new Thread(new FileReceiver(senderUsername, senderHost, portNo, fileName));
+        fileReceiver.start();
+
     }
 }
