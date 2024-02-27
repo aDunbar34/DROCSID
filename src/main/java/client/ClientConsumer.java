@@ -18,8 +18,12 @@ import java.net.Socket;
 public class ClientConsumer implements Runnable {
     private Socket socket = null;
     private ObjectMapper objectMapper = new ObjectMapper();
-    public ClientConsumer(Socket socket) {
+
+    private RoomStorage roomStorage = null;
+
+    public ClientConsumer(Socket socket, RoomStorage roomStorage) {
         this.socket = socket;
+        this.roomStorage = roomStorage;
     }
 
     @Override
