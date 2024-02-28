@@ -27,24 +27,17 @@ public class ClientProducer implements Runnable {
     private final Socket socket;
     private final String username;
 
-    private String chatRoomId;
+    private ChatRoomData chatRoomData;
     private final BufferedReader stdIn;
     PrintWriter out;
 
-    private RoomStorage roomStorage = null;
-
-
-    //used for timeouts when server taking too long to respond
-    private static long timeoutTime = 5000;
-    private static TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
 
     ObjectMapper objectMapper = new ObjectMapper();
 
-    public ClientProducer(Socket socket, String username, RoomStorage roomStorage, String chatRoomId) {
+    public ClientProducer(Socket socket, String username, ChatRoomData chatRoomData) {
         this.socket = socket;
         this.username = username;
-        this.chatRoomId = chatRoomId;
-        this.roomStorage = roomStorage;
+        this.chatRoomData = chatRoomData;
         stdIn = new BufferedReader(new InputStreamReader(System.in));
         try {
             out = new PrintWriter(this.socket.getOutputStream(), true);
@@ -67,6 +60,7 @@ public class ClientProducer implements Runnable {
 //            out.println(objectMapper.writeValueAsString(initialisationMessage));
 
             // Reads string from client and sends it back to the client String inputLine;
+            displayHomePage();
             System.out.println("Enter a message:");
             String userInput;
             while ((userInput = stdIn.readLine()) != null) {
@@ -105,6 +99,7 @@ public class ClientProducer implements Runnable {
                 case "\\join" -> joinRoom(commandArgs);
                 case "\\create" -> createRoom(commandArgs);
                 case "\\add" -> addMembersToRoom(commandArgs);
+                case "\\exit" -> exitRoom();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -112,8 +107,8 @@ public class ClientProducer implements Runnable {
                 //disconnect
 
             }
-            synchronized (chatRoomId) {
-                if (chatRoomId.equals(null)) {
+            synchronized (chatRoomData) {
+                if (chatRoomData.getChatRoomId() == null) {
                     parseHomePage(userInput);
                 } else {
                     sendTextMessage(userInput);
@@ -122,6 +117,12 @@ public class ClientProducer implements Runnable {
         }
     }
 
+
+    /**
+     * Sends a request to server to add members to the room given
+     * @param args \add &lt;roomName&gt; &lt;member&gt; - no limit to members given
+     * @author Robbie Booth
+     */
     private void addMembersToRoom(String[] args) {
         // Check for incorrect number of arguments
         if (args.length <= 2) {
@@ -147,6 +148,11 @@ public class ClientProducer implements Runnable {
         }
     }
 
+    /**
+     * Sends a request to server to create a room of name provided with members given
+     * @param args \create &lt;roomName&gt; &lt;member&gt; - no limit to members given
+     * @author Robbie Booth
+     */
     private void createRoom(String[] args) {
         // Check for incorrect number of arguments
         if (args.length < 2) {
@@ -172,6 +178,11 @@ public class ClientProducer implements Runnable {
         }
     }
 
+    /**
+     * Sends a request to join the room specified in the second arg
+     * @param args \join &lt;roomName&gt;
+     * @author Robbie Booth
+     */
     private void joinRoom(String[] args){
         // Check for incorrect number of arguments
         if (args.length != 2) {
@@ -205,14 +216,7 @@ public class ClientProducer implements Runnable {
                 case 1 ->{
                     System.out.println("You've selected join existing room");
                     //ask server for users rooms then display them (consumer needs to display)
-                    List<String> rooms = this.roomStorage.getRooms(timeoutTime, timeoutUnits);//Wait 5 seconds for rooms else timeout
-                    if(rooms == null){
-                        System.out.println("Server timed out getting rooms/rooms unavailable");
-                        break;
-                    }
-                    for (int i = 0; i < rooms.size() ; i++) {
-                        System.out.println(rooms.get(i));
-                    }
+                    requestRooms();
                     System.out.println("To join a room type \\join <RoomName>");
                 }
                 case 2 ->{
@@ -231,6 +235,7 @@ public class ClientProducer implements Runnable {
                 }
                 case 4 ->{
                     System.out.println("You've selected disconnect");
+                    System.out.println("NOT IMPLEMENTED YET");//TODO implement
                     //disconnect
                 }
                 default -> System.out.println("Unrecognized option!");
@@ -245,7 +250,7 @@ public class ClientProducer implements Runnable {
      *
      * @author Robbie Booth
      */
-    private void displayHomePage(){
+    public static void displayHomePage(){
         System.out.println("Entering Home Page:");
         System.out.println("1. Join existing room");
         System.out.println("2. Create room");
@@ -254,12 +259,31 @@ public class ClientProducer implements Runnable {
         System.out.println("Enter number to select option:");
     }
 
+
+    /**
+     * Sends a request to the server for the users rooms
+     * @author Robbie Booth
+     */
     private void requestRooms(){
         Message message_to_send = new Message(0, MessageType.ROOMS, username, (String) null, System.currentTimeMillis(), "");//make message
         try {
             out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            System.out.println("Error creating rooms request!");
+        }
+    }
+
+    /**
+     * Sends a request to the server for the user to leave the room they currently are in.
+     * @author Robbie Booth
+     */
+    private void exitRoom(){
+        try{
+            //Send message to join room
+            Message leaveRoomMessage = new Message(0, MessageType.SELECT_ROOM, username, null, System.currentTimeMillis(), "");
+            out.println(objectMapper.writeValueAsString(leaveRoomMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Leaving room - could not be parsed");
         }
     }
 
@@ -435,7 +459,7 @@ public class ClientProducer implements Runnable {
         // Prepare and send new FILE_SEND_SIGNAL Message to the server
         String fileName = filePath.getFileName().toString();
         String payload = fileName + ',' + recipient + ',' + portNo;
-        Message fileSendSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomId, System.currentTimeMillis(), payload);
+        Message fileSendSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), payload);
         try {
             out.println(objectMapper.writeValueAsString(fileSendSignalMessage));
         } catch (JsonProcessingException e) {
@@ -452,8 +476,8 @@ public class ClientProducer implements Runnable {
      * @author Robbie Booth
      */
     private void sendTextMessage(String userInput) {
-        synchronized (chatRoomId) {
-            Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomId, System.currentTimeMillis(), userInput);//make message
+        synchronized (chatRoomData) {
+            Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), userInput);//make message
             try {
                 out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
             } catch (JsonProcessingException e) {

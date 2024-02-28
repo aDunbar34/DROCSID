@@ -54,7 +54,15 @@ public class ServerConsumer extends Thread{
                         String room = null;
                         if(message.getTargetId() == null){
                             System.out.println("User: " + senderData.getUsername() +" leaving room: "+ senderData.getCurrentRoom());
+                            senderData.setCurrentRoom(null);//TODO synchronize
+
+                            Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), null , System.currentTimeMillis(), "success");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                            break;
                         }
+                        boolean userPartOfRoom = false;
 
                         Set<String> clientRoomsRef = nonBlockingServer.getClientRooms(senderData.getUsername());
                         synchronized (clientRoomsRef){
@@ -62,9 +70,18 @@ public class ServerConsumer extends Thread{
                                 System.out.println("Changed user: " + senderData.getUsername() +" room to: " + message.getTargetId() +" from: "+senderData.getCurrentRoom());
                                 senderData.setCurrentRoom(message.getTargetId());//TODO: potential bug here as i am getting confused with pass by reference and pass by copy
                                 room = message.getTargetId();
+                                userPartOfRoom = true;
                             }
                         }
-                        Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), room , System.currentTimeMillis(), "");
+
+                        if(!userPartOfRoom){
+                            Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), null , System.currentTimeMillis(), "You are not part of room: "+message.getTargetId());
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), room , System.currentTimeMillis(), "success");
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
@@ -81,16 +98,89 @@ public class ServerConsumer extends Thread{
                     }
                     case CREATE_ROOM -> {
                         String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
+                        boolean roomAlreadyExists = true;
+                        //Create room
                         Set<String> allRooms = nonBlockingServer.getAllRooms();
                         synchronized (allRooms){
                             if (!allRooms.contains(message.getTargetId())){
+                                roomAlreadyExists = false;
                                 //create room
-                                
+                                allRooms.add(message.getTargetId());
                             }
                         }
+                        if(roomAlreadyExists){
+                            Message response = new Message(0, MessageType.CREATE_ROOM, senderData.getUsername(), null, System.currentTimeMillis(), "Room already exists!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        //add rooms to each user in memory
+                        for(String username: usernames){
+                            ClientData clientData = nonBlockingServer.getClientData(username);
+                            if(clientData != null){
+                                synchronized (clientData) {
+                                    clientData.addRoom(message.getTargetId());
+                                }
+                            }
+                            //TODO when user is offline still add to storage
+                        }
+
+                        Message response = new Message(0, MessageType.CREATE_ROOM, senderData.getUsername(), null, System.currentTimeMillis(), "Room: "+message.getTargetId()+" created!");
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                        //add rooms to each user in storage (add to queue of history/file updates)
+                    }
+                    case ADD_MEMBERS -> {
+                        String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
+                        Set<String> allRooms = nonBlockingServer.getAllRooms();
+                        boolean roomExists = false;
+                        //Create room
+                        synchronized (allRooms){
+                            if (allRooms.contains(message.getTargetId())){
+
+                                roomExists = true;
+                            }
+                        }
+                        //Break as we cant do anything here as room doesn't exist
+                        if(!roomExists){
+                            Message response = new Message(0, MessageType.ADD_MEMBERS, senderData.getUsername(), null, System.currentTimeMillis(), "Room: "+message.getTargetId()+" doesn't exist!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        Set<String> clientRooms = nonBlockingServer.getClientRooms(message.getSenderId());
+                        if(!clientRooms.contains(message.getTargetId())){
+                            //client is not in room so cant add users
+                            System.out.println(message.getSenderId() + " has requested to add room: "+message.getTargetId() +" but is not part of room!");
+                            Message response = new Message(0, MessageType.ADD_MEMBERS, senderData.getUsername(), null, System.currentTimeMillis(), "You are not a member of room: "+message.getTargetId()+"!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        List<String> usersAddedToRoom = new ArrayList<>();
+                        //add rooms to each user in memory
+                        for(String username: usernames){
+                            ClientData clientData = nonBlockingServer.getClientData(username);
+                            if(clientData != null){
+                                synchronized (clientData) {
+                                    clientData.addRoom(message.getTargetId());
+                                }
+
+                            }
+                            //TODO do so they have rooms offline
+                            System.out.println("Adding room: "+message.getTargetId() + " to "+username+" rooms! - Requested by: "+message.getSenderId());
+                            usersAddedToRoom.add(username);
+                        }
+
+                        Message response = new Message(0, MessageType.ADD_MEMBERS, senderData.getUsername(), null, System.currentTimeMillis(), "Added users: ["+String.join(", ", usersAddedToRoom)+"] to room: "+message.getTargetId()+"!");
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                        //ADD rooms to each user in storage
                     }
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
-                    //eventually add a create room
                     default -> {
 
                     }

@@ -36,7 +36,7 @@ public class NonBlockingServerProducer implements Runnable {
         queueOfMessageToBeRead = queue;
         connectedClients = new HashMap<String, ClientData>();
         this.portNumber = portNumber;
-
+        this.allRooms = new HashSet<>();
     }
 
     @Override
