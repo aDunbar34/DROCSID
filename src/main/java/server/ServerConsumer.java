@@ -7,7 +7,9 @@ import messageCommunication.MessageType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
@@ -49,8 +51,22 @@ public class ServerConsumer extends Thread{
                         }
                     }
                     case SELECT_ROOM -> {//select rooms so that we send the message to the user(s) only if they are currently in that room, else we save to history and send message when history
-                        System.out.println("Changed user: " + senderData.getUsername() +" room to: " + message.getTargetId() +" from: "+senderData.getCurrentRoom());
-                        senderData.setCurrentRoom(message.getTargetId());//TODO: potential bug here as i am getting confused with pass by reference and pass by copy
+                        String room = null;
+                        if(message.getTargetId() == null){
+                            System.out.println("User: " + senderData.getUsername() +" leaving room: "+ senderData.getCurrentRoom());
+                        }
+
+                        Set<String> clientRoomsRef = nonBlockingServer.getClientRooms(senderData.getUsername());
+                        synchronized (clientRoomsRef){
+                            if(clientRoomsRef.contains(message.getTargetId())){
+                                System.out.println("Changed user: " + senderData.getUsername() +" room to: " + message.getTargetId() +" from: "+senderData.getCurrentRoom());
+                                senderData.setCurrentRoom(message.getTargetId());//TODO: potential bug here as i am getting confused with pass by reference and pass by copy
+                                room = message.getTargetId();
+                            }
+                        }
+                        Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), room , System.currentTimeMillis(), "");
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
                     case ROOMS -> {//return all rooms available to user
                         byte[] roomsAsBytes = objectMapper.writeValueAsBytes(senderData.getUserRooms().toArray());
@@ -62,6 +78,16 @@ public class ServerConsumer extends Thread{
                     case INITIALISATION -> {//set up address that user has and return rooms
 //                        nonBlockingServer.addConnectedClient(keyOfMessage, message.getSenderId());
                         //TODO error here
+                    }
+                    case CREATE_ROOM -> {
+                        String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
+                        Set<String> allRooms = nonBlockingServer.getAllRooms();
+                        synchronized (allRooms){
+                            if (!allRooms.contains(message.getTargetId())){
+                                //create room
+                                
+                            }
+                        }
                     }
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
                     //eventually add a create room

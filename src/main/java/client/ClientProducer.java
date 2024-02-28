@@ -106,7 +106,6 @@ public class ClientProducer implements Runnable {
                 case "\\create" -> createRoom(commandArgs);
                 case "\\add" -> addMembersToRoom(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
-
             }
         } else { // Treat input as message
             if(userInput.toLowerCase().equals("disconnect")) {
