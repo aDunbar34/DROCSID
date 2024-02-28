@@ -61,9 +61,10 @@ public class Client {
      */
     public static void chatLoop(Socket socket, String username) {
         RoomStorage roomStorage = new RoomStorage();
+        String chatRoom = null;
 
-        ClientProducer peerInput = new ClientProducer(socket, username, roomStorage);
-        ClientConsumer peerOutput = new ClientConsumer(socket, roomStorage);
+        ClientProducer peerInput = new ClientProducer(socket, username, roomStorage, chatRoom);
+        ClientConsumer peerOutput = new ClientConsumer(socket, roomStorage, chatRoom);
 
         Thread inputThread = new Thread(peerInput);
         Thread outputThread = new Thread(peerOutput);

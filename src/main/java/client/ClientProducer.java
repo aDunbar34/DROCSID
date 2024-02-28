@@ -33,7 +33,6 @@ public class ClientProducer implements Runnable {
 
     private RoomStorage roomStorage = null;
 
-    private Pages currentPage;
 
     //used for timeouts when server taking too long to respond
     private static long timeoutTime = 5000;
@@ -41,11 +40,10 @@ public class ClientProducer implements Runnable {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
-    public ClientProducer(Socket socket, String username, RoomStorage roomStorage) {
+    public ClientProducer(Socket socket, String username, RoomStorage roomStorage, String chatRoomId) {
         this.socket = socket;
         this.username = username;
-        this.chatRoomId = null;
-        this.currentPage = Pages.HOME;
+        this.chatRoomId = chatRoomId;
         this.roomStorage = roomStorage;
         stdIn = new BufferedReader(new InputStreamReader(System.in));
         try {
@@ -111,15 +109,17 @@ public class ClientProducer implements Runnable {
 
             }
         } else { // Treat input as message
-            if(userInput.toLowerCase().equals("disconnect")){
+            if(userInput.toLowerCase().equals("disconnect")) {
                 //disconnect
 
             }
-            if(currentPage.equals(Pages.HOME)){
-                parseHomePage(userInput);
-                //break
+            synchronized (chatRoomId) {
+                if (chatRoomId.equals(null)) {
+                    parseHomePage(userInput);
+                } else {
+                    sendTextMessage(userInput);
+                }
             }
-            sendTextMessage(userInput);
         }
     }
 
@@ -453,11 +453,13 @@ public class ClientProducer implements Runnable {
      * @author Robbie Booth
      */
     private void sendTextMessage(String userInput) {
-        Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomId, System.currentTimeMillis(), userInput);//make message
-        try {
-            out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (chatRoomId) {
+            Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomId, System.currentTimeMillis(), userInput);//make message
+            try {
+                out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

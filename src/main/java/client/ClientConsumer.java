@@ -21,9 +21,12 @@ public class ClientConsumer implements Runnable {
 
     private RoomStorage roomStorage = null;
 
-    public ClientConsumer(Socket socket, RoomStorage roomStorage) {
+    private String chatRoomId;
+
+    public ClientConsumer(Socket socket, RoomStorage roomStorage, String chatRoomId) {
         this.socket = socket;
         this.roomStorage = roomStorage;
+        this.chatRoomId = chatRoomId;
     }
 
     @Override
@@ -47,12 +50,20 @@ public class ClientConsumer implements Runnable {
 
                 // Route message to appropriate handler function
                 switch (messageParsed.getType()) {
+                    case SELECT_ROOM -> handleRoomSelection(messageParsed);
                     case TEXT -> handleTextMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void handleRoomSelection(Message messageParsed) {
+        synchronized (chatRoomId){
+            String newRoom = messageParsed.getTargetId();
+            chatRoomId = newRoom;
         }
     }
 
