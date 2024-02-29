@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
 
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -93,6 +94,8 @@ public class ClientProducer implements Runnable {
                 case "\\view" -> viewImage(commandArgs);
                 case "\\play" -> playVideo(commandArgs);
                 case "\\sendFile" -> sendFile(commandArgs);
+                case "\\videoCall" -> callUser(commandArgs);
+                case "\\viewWebcam" -> webcamTest();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
             }
@@ -297,5 +300,21 @@ public class ClientProducer implements Runnable {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * View local webcam
+     *
+     * @author Martin Mckeown
+     */
+    private void webcamTest() {
+        SwingUtilities.invokeLater(() -> {
+            new WebcamViewer().setVisible(true);
+        });
+    }
+
+    private void callUser(String[] args) {
+    }
+
+
 
 }
