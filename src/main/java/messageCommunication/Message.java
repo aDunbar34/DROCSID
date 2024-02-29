@@ -45,13 +45,26 @@ public class Message {
         this.payload = payload;
     }
 
+    /**
+     * Constructs the message
+     * @param length
+     * @param type
+     * @param senderId
+     * @param targetId
+     * @param timestamp
+     * @param message if message is null payload is set to empty byte array
+     */
     public Message(int length, MessageType type, String senderId, String targetId, long timestamp, String message) {
         this.length = length;
         this.type = type;
         this.senderId = senderId;
         this.targetId = targetId;
         this.timestamp = timestamp;
-        this.payload = message.getBytes(MESSAGE_CHARACTER_SET);
+        if(message == null){
+            this.payload = new byte[0];
+        }else{
+            this.payload = message.getBytes(MESSAGE_CHARACTER_SET);
+        }
     }
 
 

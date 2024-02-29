@@ -60,8 +60,10 @@ public class Client {
      * @author Robbie Booth
      */
     public static void chatLoop(Socket socket, String username) {
-        ClientProducer peerInput = new ClientProducer(socket, username, "test");
-        ClientConsumer peerOutput = new ClientConsumer(socket);
+        ChatRoomData chatRoom = new ChatRoomData(null);
+
+        ClientProducer peerInput = new ClientProducer(socket, username,  chatRoom);
+        ClientConsumer peerOutput = new ClientConsumer(socket, chatRoom);
 
         Thread inputThread = new Thread(peerInput);
         Thread outputThread = new Thread(peerOutput);
