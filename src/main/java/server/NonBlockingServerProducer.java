@@ -199,6 +199,7 @@ public class NonBlockingServerProducer implements Runnable {
      */
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
+        System.out.println(buffer);
         clientChannel.write(buffer);
         System.out.println("Messaged Client");
     }

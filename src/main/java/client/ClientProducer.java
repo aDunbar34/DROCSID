@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
+import server.NonBlockingServerProducer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,8 +15,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
@@ -93,12 +96,30 @@ public class ClientProducer implements Runnable {
                 case "\\view" -> viewImage(commandArgs);
                 case "\\play" -> playVideo(commandArgs);
                 case "\\sendFile" -> sendFile(commandArgs);
+                case "\\online" -> showOnline();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
 
             }
         } else { // Treat input as message
             sendTextMessage(userInput);
         }
+    }
+
+
+    /**
+     * Displays a list of the currently online users in the chatroom
+     *
+     * @author Adam Dunbar
+     */
+    public void showOnline() {
+        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomId, System.currentTimeMillis());//make message
+        try {
+            out.println(objectMapper.writeValueAsString(toServer));//send message to server
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return;
     }
 
     /**

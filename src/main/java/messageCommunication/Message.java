@@ -36,6 +36,17 @@ public class Message {
         payload = new byte[0];
     }
 
+    public Message(int length, MessageType type, String senderId, String targetId, long timestamp) {
+        this.length = length;
+        this.type = type;
+        this.senderId = senderId;
+        this.targetId = targetId;
+        this.timestamp = timestamp;
+        this.payload = null;
+    }
+
+
+
     public Message(int length, MessageType type, String senderId, String targetId, long timestamp, byte[] payload) {
         this.length = length;
         this.type = type;
