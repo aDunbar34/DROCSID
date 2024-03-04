@@ -14,8 +14,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
@@ -27,16 +27,17 @@ public class ClientProducer implements Runnable {
     private final Socket socket;
     private final String username;
 
-    private String chatRoomId;
+    private ChatRoomData chatRoomData;
     private final BufferedReader stdIn;
     PrintWriter out;
 
+
     ObjectMapper objectMapper = new ObjectMapper();
 
-    public ClientProducer(Socket socket, String username, String chatRoomId) {
+    public ClientProducer(Socket socket, String username, ChatRoomData chatRoomData) {
         this.socket = socket;
         this.username = username;
-        this.chatRoomId = chatRoomId;
+        this.chatRoomData = chatRoomData;
         stdIn = new BufferedReader(new InputStreamReader(System.in));
         try {
             out = new PrintWriter(this.socket.getOutputStream(), true);
@@ -52,12 +53,14 @@ public class ClientProducer implements Runnable {
             Message initialisationMessage = new Message(0, MessageType.INITIALISATION, username, (String) null, System.currentTimeMillis(), "");
             out.println(objectMapper.writeValueAsString(initialisationMessage));
 
+
             //Select room
             //In future this will allow room choosing
-            initialisationMessage = new Message(0, MessageType.SELECT_ROOM, username, "test", System.currentTimeMillis(), "");
-            out.println(objectMapper.writeValueAsString(initialisationMessage));
+//            initialisationMessage = new Message(0, MessageType.SELECT_ROOM, username, "test", System.currentTimeMillis(), "");
+//            out.println(objectMapper.writeValueAsString(initialisationMessage));
 
             // Reads string from client and sends it back to the client String inputLine;
+            displayHomePage();
             System.out.println("Enter a message:");
             String userInput;
             while ((userInput = stdIn.readLine()) != null) {
@@ -93,11 +96,194 @@ public class ClientProducer implements Runnable {
                 case "\\view" -> viewImage(commandArgs);
                 case "\\play" -> playVideo(commandArgs);
                 case "\\sendFile" -> sendFile(commandArgs);
+                case "\\join" -> joinRoom(commandArgs);
+                case "\\create" -> createRoom(commandArgs);
+                case "\\add" -> addMembersToRoom(commandArgs);
+                case "\\exit" -> exitRoom();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
-
             }
         } else { // Treat input as message
-            sendTextMessage(userInput);
+            if(userInput.toLowerCase().equals("disconnect")) {
+                //disconnect
+
+            }
+            synchronized (chatRoomData) {
+                if (chatRoomData.getChatRoomId() == null) {
+                    parseHomePage(userInput);
+                } else {
+                    sendTextMessage(userInput);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Sends a request to server to add members to the room given
+     * @param args \add &lt;roomName&gt; &lt;member&gt; - no limit to members given
+     * @author Robbie Booth
+     */
+    private void addMembersToRoom(String[] args) {
+        // Check for incorrect number of arguments
+        if (args.length <= 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\add <roomName> <member>");
+            return;
+        }
+
+        // Get room name
+        String roomName = args[1];
+        HashSet<String> members = new HashSet<>();
+        for (int i = 2; i < args.length; i++) {
+            members.add(args[i]);
+        }
+
+        //should error on server if user not in room
+        try{
+            //Send message to add members to room
+            Message addMembersMessage = new Message(0, MessageType.ADD_MEMBERS, username, roomName, System.currentTimeMillis(), objectMapper.writeValueAsString(members.toArray()));
+            out.println(objectMapper.writeValueAsString(addMembersMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: add members to room could not be parsed");
+        }
+    }
+
+    /**
+     * Sends a request to server to create a room of name provided with members given
+     * @param args \create &lt;roomName&gt; &lt;member&gt; - no limit to members given
+     * @author Robbie Booth
+     */
+    private void createRoom(String[] args) {
+        // Check for incorrect number of arguments
+        if (args.length < 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\create <roomName> <member>");
+            return;
+        }
+
+        // Get room name
+        String roomName = args[1];
+        HashSet<String> members = new HashSet<>();
+        for (int i = 2; i < args.length; i++) {
+            members.add(args[i]);
+        }
+        members.add(this.username);//add in the user connected if not already added by themselves
+
+        try{
+            //Send message to create room
+            Message joinRoomMessage = new Message(0, MessageType.CREATE_ROOM, username, roomName, System.currentTimeMillis(), objectMapper.writeValueAsString(members.toArray()));
+            out.println(objectMapper.writeValueAsString(joinRoomMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: create room could not be parsed");
+        }
+    }
+
+    /**
+     * Sends a request to join the room specified in the second arg
+     * @param args \join &lt;roomName&gt;
+     * @author Robbie Booth
+     */
+    private void joinRoom(String[] args){
+        // Check for incorrect number of arguments
+        if (args.length != 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\join <roomName>");
+            return;
+        }
+
+        // Get room name
+        String roomName = args[1];
+
+        try{
+            //Send message to join room
+            Message joinRoomMessage = new Message(0, MessageType.SELECT_ROOM, username, roomName, System.currentTimeMillis(), "");
+            out.println(objectMapper.writeValueAsString(joinRoomMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Room could not be parsed");
+        }
+    }
+
+    /**
+     * Parses the options that can be selected for the home page.
+     *
+     * @param option the value associated with the home page selections/options
+     * @author Robbie Booth
+     */
+    private void parseHomePage(String option){
+        try{
+            Integer choice = Integer.parseInt(option);
+            switch(choice){
+                case 1 ->{
+                    System.out.println("You've selected join existing room");
+                    //ask server for users rooms then display them (consumer needs to display)
+                    requestRooms();
+                    System.out.println("To join a room type \\join <RoomName>");
+                }
+                case 2 ->{
+                    System.out.println("You've selected create a room");
+                    //look for input from user for selecting a room
+                    System.out.println("To create a room enter \\create <roomName>");
+                    System.out.println("Then <username> space, for each user in room");
+                    System.out.println("E.g: for six users \\create TheCrew martin adam robbie lewis max euan");
+                }
+                case 3 ->{
+                    System.out.println("You've selected add user to room");
+                    //display info on adding user to room
+                    System.out.println("To add members to a room enter \\add <roomName>");
+                    System.out.println("Then <username> space, for each user to be added to room");
+                    System.out.println("E.g: for adding two users \\add TheCrew fred scooby");
+                }
+                case 4 ->{
+                    System.out.println("You've selected disconnect");
+                    System.out.println("NOT IMPLEMENTED YET");//TODO implement
+                    //disconnect
+                }
+                default -> System.out.println("Unrecognized option!");
+            }
+        }catch (NumberFormatException e){
+            System.out.println("Unrecognized option!");
+        }
+    }
+
+    /**
+     * Terrible way of doing it but displays the possible options on home page
+     *
+     * @author Robbie Booth
+     */
+    public static void displayHomePage(){
+        System.out.println("Entering Home Page:");
+        System.out.println("1. Join existing room");
+        System.out.println("2. Create room");
+        System.out.println("3. Add user to room");
+        System.out.println("4. Disconnect");
+        System.out.println("Enter number to select option:");
+    }
+
+
+    /**
+     * Sends a request to the server for the users rooms
+     * @author Robbie Booth
+     */
+    private void requestRooms(){
+        Message message_to_send = new Message(0, MessageType.ROOMS, username, (String) null, System.currentTimeMillis(), "");//make message
+        try {
+            out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
+        } catch (JsonProcessingException e) {
+            System.out.println("Error creating rooms request!");
+        }
+    }
+
+    /**
+     * Sends a request to the server for the user to leave the room they currently are in.
+     * @author Robbie Booth
+     */
+    private void exitRoom(){
+        try{
+            //Send message to join room
+            Message leaveRoomMessage = new Message(0, MessageType.SELECT_ROOM, username, null, System.currentTimeMillis(), "");
+            out.println(objectMapper.writeValueAsString(leaveRoomMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Leaving room - could not be parsed");
         }
     }
 
@@ -288,11 +474,13 @@ public class ClientProducer implements Runnable {
      * @author Robbie Booth
      */
     private void sendTextMessage(String userInput) {
-        Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomId, System.currentTimeMillis(), userInput);//make message
-        try {
-            out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (chatRoomData) {
+            Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), userInput);//make message
+            try {
+                out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -1,6 +1,8 @@
 package client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import customExceptions.InvalidMessageException;
 import messageCommunication.Message;
@@ -19,8 +21,12 @@ import java.net.Socket;
 public class ClientConsumer implements Runnable {
     private Socket socket = null;
     private ObjectMapper objectMapper = new ObjectMapper();
-    public ClientConsumer(Socket socket) {
+
+    private ChatRoomData chatRoomData;
+
+    public ClientConsumer(Socket socket, ChatRoomData chatRoomData) {
         this.socket = socket;
+        this.chatRoomData = chatRoomData;
     }
 
     @Override
@@ -44,6 +50,10 @@ public class ClientConsumer implements Runnable {
 
                 // Route message to appropriate handler function
                 switch (messageParsed.getType()) {
+                    case SELECT_ROOM -> handleRoomSelection(messageParsed);
+                    case ROOMS -> handleRooms(messageParsed);
+                    case CREATE_ROOM -> handleCreateRoom(messageParsed);
+                    case ADD_MEMBERS -> handleAddMembersToRoom(messageParsed);
                     case TEXT -> handleTextMessage(messageParsed);
                     case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
@@ -52,6 +62,77 @@ public class ClientConsumer implements Runnable {
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Handles servers response of selecting room and updates the clients local information
+     * @param messageParsed message given from server
+     * @author Robbie Booth
+     */
+    private void handleRoomSelection(Message messageParsed) {
+        if(!(messageParsed.getTextMessage().equals("success"))){
+            //room not successfully joined
+            System.out.println(messageParsed.getTextMessage());
+            return;
+        }
+
+        synchronized (chatRoomData){
+            String newRoom = messageParsed.getTargetId();
+            chatRoomData.setChatRoomId(newRoom);
+        }
+
+        if(messageParsed.getTargetId() == null){
+            System.out.println("Room successfully left!");
+            ClientProducer.displayHomePage();//Display home page options
+        }else{
+            System.out.println("Room changed to: "+messageParsed.getTargetId());
+        }
+    }
+
+
+    /**
+     * Handles servers response of getting all rooms and displays them
+     * @param messageParsed message given from server
+     * @author Robbie Booth
+     */
+    private void handleRooms(Message messageParsed){
+        try{
+            String[] usersRooms = objectMapper.readValue(messageParsed.getPayload(), String[].class);
+            if(usersRooms.length == 0){
+                System.out.println("No rooms found!");
+                return;
+            }
+
+            System.out.println("Your rooms:");
+            for(String room: usersRooms){
+                System.out.println(room);
+            }
+        } catch (StreamReadException e) {
+            System.out.println("Error: couldn't read rooms!");
+        } catch (DatabindException e) {
+            System.out.println("Error: couldn't read rooms!");
+        } catch (IOException e) {
+            System.out.println("Error: couldn't read rooms!");
+        }
+
+    }
+
+    /**
+     * Handles servers response of creating room
+     * @param messageParsed message given from server
+     * @author Robbie Booth
+     */
+    private void handleCreateRoom(Message messageParsed){
+        System.out.println(messageParsed.getTextMessage());
+    }
+
+    /**
+     * Handles servers response of adding members to a room
+     * @param messageParsed message given from server
+     * @author Robbie Booth
+     */
+    private void handleAddMembersToRoom(Message messageParsed){
+        System.out.println(messageParsed.getTextMessage());
     }
 
     /**

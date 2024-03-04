@@ -26,6 +26,8 @@ public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
 
+    private HashSet<String> allRooms;
+
     LinkedBlockingQueue<Message> queueOfMessageToBeRead;
     private final int portNumber;
 
@@ -34,7 +36,7 @@ public class NonBlockingServerProducer implements Runnable {
         queueOfMessageToBeRead = queue;
         connectedClients = new HashMap<String, ClientData>();
         this.portNumber = portNumber;
-
+        this.allRooms = new HashSet<>();
     }
 
     @Override
@@ -84,12 +86,24 @@ public class NonBlockingServerProducer implements Runnable {
         }
     }
 
+    public HashSet<String> getAllRooms() {
+        return allRooms;
+    }
+
     /**
     * @return The connected clients data or null if not connected
      * @author Robbie Booth
     * */
     public synchronized ClientData getClientData(String username){
         return connectedClients.get(username);
+    }
+
+    public synchronized Set<String> getClientRooms(String username){
+        ClientData client = connectedClients.get(username);
+        if(client.equals(null)){
+            return null;
+        }
+        return client.getUserRooms();
     }
 
     /**

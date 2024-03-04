@@ -15,6 +15,10 @@ public enum MessageType {
 
     SELECT_ROOM,
 
+    CREATE_ROOM,
+
+    ADD_MEMBERS,
+
     FILE_SEND_SIGNAL,
     FILE_RECEIVE_SIGNAL,
     FILE_LISTEN_SIGNAL;
