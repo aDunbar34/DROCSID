@@ -19,13 +19,17 @@ public class FileSender implements Runnable {
     private final File file;
     private final int portNo;
     private final String recipientUsername;
+    private final String recipientHost;
+    private boolean transferComplete;
     private static final int TIMEOUT = 60000; // 60 seconds
     private static final int BUFFER_SIZE = 4096; // 4 KB
 
-    public FileSender(File file, int portNo, String recipientUsername) {
+    public FileSender(File file, int portNo, String recipientUsername, String recipientHost) {
         this.file = file;
         this.portNo = portNo;
         this.recipientUsername = recipientUsername;
+        this.recipientHost = recipientHost;
+        this.transferComplete = false;
     }
 
     @Override
@@ -42,14 +46,25 @@ public class FileSender implements Runnable {
             System.out.println("Awaiting connection from peer...");
 
             // Await connection from peer
-            try (Socket socket = listenerSocket.accept()) {
-                System.out.println("Connection with <" + recipientUsername + "> established. Beginning file transmission.");
-                sendFile(socket);
-                System.out.println("File '" + file.getName() + "' successfully sent to user <" + recipientUsername + ">");
-            } catch (SocketTimeoutException e) {
-                System.out.println("ERROR: TCP Listener timed out. Please ensure the recipient's username is correct and that they are online");
-            } catch (IOException e) {
-                System.out.println("ERROR: Something went wrong with the TCP connection to <" + recipientUsername + ">");
+            while (!transferComplete) {
+                try (Socket socket = listenerSocket.accept()) {
+                    // Check connection is from correct recipient
+                    String connectionHost = socket.getInetAddress().getHostAddress();
+                    if (connectionHost.equals(recipientHost)) {
+                        System.out.println("Connection with <" + recipientUsername + "> established. Beginning file transmission.");
+                        sendFile(socket);
+                        System.out.println("File '" + file.getName() + "' successfully sent to user <" + recipientUsername + ">");
+                        transferComplete = true;
+                    } else {
+                        System.out.println("Connection received from incorrect client...");
+                    }
+                } catch (SocketTimeoutException e) {
+                    System.out.println("ERROR: TCP Listener timed out. Please ensure the recipient's username is correct and that they are online");
+                    break;
+                } catch (IOException e) {
+                    System.out.println("ERROR: Something went wrong with the TCP connection to <" + recipientUsername + ">");
+                    break;
+                }
             }
 
         } catch (IOException e) {

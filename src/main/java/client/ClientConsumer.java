@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import customExceptions.InvalidMessageException;
 import messageCommunication.Message;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -44,6 +45,7 @@ public class ClientConsumer implements Runnable {
                 // Route message to appropriate handler function
                 switch (messageParsed.getType()) {
                     case TEXT -> handleTextMessage(messageParsed);
+                    case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                 }
             }
@@ -61,6 +63,29 @@ public class ClientConsumer implements Runnable {
      */
     private void handleTextMessage(Message message) {
         System.out.println(message.getSenderId()+"> " + message.getTextMessage());
+    }
+
+    /**
+     * Parses the payload of the necessary data and
+     * prepares new FileSender thread
+     *
+     * @param message The message
+     *
+     * @author Euan Gilmour
+     */
+    private void handleFileListenSignalMessage(Message message) {
+
+        String[] payloadParts = message.getTextMessage().split(",");
+        String filePath = payloadParts[0];
+        String recipientUsername = payloadParts[1];
+        String receiverHost = payloadParts[2];
+        int portNo = Integer.parseInt(payloadParts[3]);
+        File file = new File(filePath);
+
+        // Start up a new FileSender thread
+        Thread fileSender = new Thread(new FileSender(file, portNo, recipientUsername, receiverHost));
+        fileSender.start();
+
     }
 
     /**
