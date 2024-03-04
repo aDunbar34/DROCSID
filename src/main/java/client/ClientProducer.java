@@ -300,7 +300,7 @@ public class ClientProducer implements Runnable {
      * @author Adam Dunbar
      */
     public void showOnline() {
-        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomId, System.currentTimeMillis());//make message
+        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
         try {
             out.println(objectMapper.writeValueAsString(toServer));//send message to server
         } catch (JsonProcessingException e) {
