@@ -54,9 +54,15 @@ public class FileReceiver implements Runnable {
 
         // Wait for timeout or until a successful connection
         long startTime = System.currentTimeMillis();
-        while (!connectionEstablished && (System.currentTimeMillis() - startTime) / 1000 < 60) {}
+        while (!connectionEstablished && (System.currentTimeMillis() - startTime) / 1000 < 60) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-        if ((System.currentTimeMillis() - startTime) / 1000 >= 60) {
+        if (!connectionEstablished) {
             System.out.println("ERROR: Unable to establish a connection with <" + senderUsername + ">");
             return;
         }
@@ -84,6 +90,7 @@ public class FileReceiver implements Runnable {
             connectionEstablished = true;
             return true;
         } catch (IOException e) {
+            System.out.println("Something wen wrong while connecting");
             return false;
         }
     }
@@ -96,8 +103,6 @@ public class FileReceiver implements Runnable {
      * @author Euan Gilmour
      */
     private void receiveFile() throws IOException {
-
-        System.out.println("Transfer begins here");
 
         // Verify that drocsidFiles directory exists. Create it if not
         Path filesDirectory = Paths.get(System.getProperty("user.dir"), "drocsidFiles");
