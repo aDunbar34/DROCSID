@@ -42,7 +42,7 @@ public class Message {
         this.senderId = senderId;
         this.targetId = targetId;
         this.timestamp = timestamp;
-        this.payload = null;
+        this.payload = new byte[0];
     }
 
 

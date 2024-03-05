@@ -55,23 +55,26 @@ public class ServerConsumer extends Thread{
 
                     case ONLINE_STATUSES -> {
                         String onlineStatuses = "";
-                        if (senderData.getCurrentRoom() != null) {
-                            String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
-                            List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
+                        synchronized (this) {
+                            if (senderData.getCurrentRoom() != null) {
+                                String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
+                                List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
 
-                            // Create the message to display as response
-                            onlineStatuses = "Users in Room: \n";
-                            for (ClientData clientInRoom: clientsInRoom) {
-                                onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
-                            }
-                        } else if (senderData.getCurrentRoom() == null) {
-                            List<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+                                // Create the message to display as response
+                                onlineStatuses = "Users in Room: \n";
+                                for (ClientData clientInRoom: clientsInRoom) {
+                                    onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
+                                }
+                            } else if (senderData.getCurrentRoom() == null) {
+                                List<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
 
-                            // Create the message to display as response
-                            onlineStatuses = "Users in Server: \n";
-                            for (ClientData clientInServer: clientsInServer) {
-                                onlineStatuses += "- " + clientInServer.getUsername() + "\n";
+                                // Create the message to display as response
+                                onlineStatuses = "Users in Server: \n";
+                                for (ClientData clientInServer: clientsInServer) {
+                                    onlineStatuses += "- " + clientInServer.getUsername() + "\n";
+                                }
                             }
+
                         }
 
                         Message clientMessage = new Message(0, MessageType.ONLINE_STATUSES , senderData.getUsername(), null, System.currentTimeMillis(), onlineStatuses );

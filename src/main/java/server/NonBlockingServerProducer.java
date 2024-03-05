@@ -132,11 +132,7 @@ public class NonBlockingServerProducer implements Runnable {
      * */
 
     public synchronized List<ClientData> getClientsInServer() {
-        List<ClientData> clientsInServer = new ArrayList<>();
-        for (ClientData clientData: connectedClients.values()) {
-            clientsInServer.add(clientData);
-        }
-        return clientsInServer;
+        return new ArrayList<>(connectedClients.values());
     }
 
     /**
