@@ -54,17 +54,25 @@ public class ServerConsumer extends Thread{
                     }
 
                     case ONLINE_STATUSES -> {
-                        String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
-                        List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
-                        List<String> userList = new ArrayList<String>();
-                        String onlineStatuses = "Users in Room: \n";
+                        String onlineStatuses = "";
+                        if (senderData.getCurrentRoom() != null) {
+                            String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
+                            List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
 
-                        // Populate list of usernames
-                        for (ClientData clientInRoom: clientsInRoom) {
-                            userList.add(clientInRoom.getUsername());
-                            onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Room: \n";
+                            for (ClientData clientInRoom: clientsInRoom) {
+                                onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
+                            }
+                        } else if (senderData.getCurrentRoom() == null) {
+                            List<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Server: \n";
+                            for (ClientData clientInServer: clientsInServer) {
+                                onlineStatuses += "- " + clientInServer.getUsername() + "\n";
+                            }
                         }
-                        System.out.println(userList);
 
                         Message clientMessage = new Message(0, MessageType.ONLINE_STATUSES , senderData.getUsername(), null, System.currentTimeMillis(), onlineStatuses );
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);

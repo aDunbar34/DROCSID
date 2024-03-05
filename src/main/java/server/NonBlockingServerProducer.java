@@ -1,5 +1,6 @@
 package server;
 
+import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -120,6 +121,22 @@ public class NonBlockingServerProducer implements Runnable {
             }
         }
         return clientsInRoom;
+    }
+
+    /**
+     *
+     * Returns a list of all clients in the server
+     * @return A list of connected clients in the server
+     * @author Adam Dunbar
+     *
+     * */
+
+    public synchronized List<ClientData> getClientsInServer() {
+        List<ClientData> clientsInServer = new ArrayList<>();
+        for (ClientData clientData: connectedClients.values()) {
+            clientsInServer.add(clientData);
+        }
+        return clientsInServer;
     }
 
     /**
