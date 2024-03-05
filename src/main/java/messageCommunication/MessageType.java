@@ -20,7 +20,8 @@ public enum MessageType {
     ADD_MEMBERS,
 
     FILE_SEND_SIGNAL,
-    FILE_RECEIVE_SIGNAL;
+    FILE_RECEIVE_SIGNAL,
+    FILE_LISTEN_SIGNAL;
 
     @JsonValue
     public String toJson() {

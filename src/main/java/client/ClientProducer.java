@@ -404,8 +404,8 @@ public class ClientProducer implements Runnable {
     }
 
     /**
-     * Prepares a new FileSender thread to send a file
-     * and prepares and sends a FILE_SEND_SIGNAL Message
+     * Validates file to send and sends new
+     * FILE_SEND_SIGNAL to the server
      *
      * @param args The args the command was called with.
      *
@@ -452,19 +452,20 @@ public class ClientProducer implements Runnable {
             return;
         }
 
-        // All validation checks passed, spin up a new FileSender thread
-        Thread fileSender = new Thread(new FileSender(filePath.toFile(), portNo, recipient));
-        fileSender.start();
-
         // Prepare and send new FILE_SEND_SIGNAL Message to the server
         String fileName = filePath.getFileName().toString();
-        String payload = fileName + ',' + recipient + ',' + portNo;
-        Message fileSendSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), payload);
-        try {
-            out.println(objectMapper.writeValueAsString(fileSendSignalMessage));
-        } catch (JsonProcessingException e) {
-            System.out.println("ERROR: Something went wrong while trying to send a FILE_SEND_SIGNAL message to the server");
+        String payload = fileName + ',' + pathString + ',' + recipient + ',' + portNo;
+        synchronized (chatRoomData) {
+            Message fileListenSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), payload);
+            try {
+                out.println(objectMapper.writeValueAsString(fileListenSignalMessage));
+            } catch (JsonProcessingException e) {
+                System.out.println("ERROR: Something went wrong while trying to send a FILE_SEND_SIGNAL message to the server");
+                return;
+            }
         }
+
+        System.out.println("Signalling file transfer to server...");
 
     }
 

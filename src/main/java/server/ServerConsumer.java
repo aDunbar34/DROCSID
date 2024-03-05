@@ -205,8 +205,9 @@ public class ServerConsumer extends Thread{
         // Parse message payload
         String[] fileTransferDetails = message.getTextMessage().split(",");
         String fileName = fileTransferDetails[0];
-        String recipientUsername = fileTransferDetails[1];
-        String portNo = fileTransferDetails[2];
+        String filePath = fileTransferDetails[1];
+        String recipientUsername = fileTransferDetails[2];
+        String portNo = fileTransferDetails[3];
 
         ClientData senderData = nonBlockingServer.getClientData(message.getSenderId());
 
@@ -216,6 +217,13 @@ public class ServerConsumer extends Thread{
             if (client.getUsername().equals(recipientUsername)) {
 
                 System.out.println("Handling file transfer signals between sender <" + message.getSenderId() + "> and receiver <" + recipientUsername + ">");
+
+                // Prepare and send new FILE_LISTEN_SIGNAL
+                String receiverHost = ((InetSocketAddress) client.getUserChannel().getRemoteAddress()).getHostString();
+                String listenPayload = filePath + ',' + client.getUsername() + ',' + receiverHost + ',' + portNo;
+                Message fileListenSignal = new Message(0, MessageType.FILE_LISTEN_SIGNAL, message.getSenderId(), senderData.getCurrentRoom(), System.currentTimeMillis(), listenPayload);
+                byte[] listenMessageAsByteJSON = objectMapper.writeValueAsBytes(fileListenSignal);
+                nonBlockingServer.writeDataToClient(senderData.getUserChannel(), listenMessageAsByteJSON);
 
                 // Prepare and send new FILE_RECEIVE_SIGNAL
                 String senderHost = ((InetSocketAddress) senderData.getUserChannel().getRemoteAddress()).getHostString();

@@ -5,10 +5,11 @@ import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Connects to a peer, receives a file
@@ -22,6 +23,8 @@ public class FileReceiver implements Runnable {
     private final String senderHost;
     private final int portNo;
     private String fileName;
+    private Socket socket;
+    private boolean connectionEstablished;
     private static final int BUFFER_SIZE = 4096; // 4 KB
 
     public FileReceiver(String senderUsername, String senderHost, int portNo, String fileName) {
@@ -29,6 +32,7 @@ public class FileReceiver implements Runnable {
         this.senderHost = senderHost;
         this.portNo = portNo;
         this.fileName = fileName;
+        this.connectionEstablished = false;
     }
 
     @Override
@@ -37,29 +41,68 @@ public class FileReceiver implements Runnable {
         System.out.println("User <" + senderUsername + "> wants to send you a file '" + fileName + "'");
         System.out.println("Attempting to connect to <" + senderUsername + ">");
 
-        // Establish a connection with sender
-        try (Socket socket = new Socket(senderHost, portNo)) {
+        // Schedule a connection attempt task with a timeout
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (attemptConnection()) {
+                    timer.cancel();
+                }
+            }
+        }, 0, 1000); // Attempt connection every 5 seconds
 
-            System.out.println("Connection established with <" + senderUsername + ">, beginning file transfer.");
-            receiveFile(socket);
-            System.out.println("Successfully received file '" + fileName + "' from user <" + senderUsername + ">");
+        // Wait for timeout or until a successful connection
+        long startTime = System.currentTimeMillis();
+        while (!connectionEstablished && (System.currentTimeMillis() - startTime) / 1000 < 60) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-        } catch (UnknownHostException e) {
-            System.out.println("ERROR: Sender host is unknown. Something has gone wrong.");
+        if (!connectionEstablished) {
+            System.out.println("ERROR: Unable to establish a connection with <" + senderUsername + ">");
+            return;
+        }
+
+        try {
+            receiveFile();
+            socket.close();
         } catch (IOException e) {
-            System.out.println("ERROR: Something went wrong while trying to establish a connection to <" + senderUsername + ">");
+            System.out.println("ERROR: Something went wrong during file transfer.");
         }
 
     }
 
     /**
-     * Receives a file over TCP and saves it in the user's drocsidFiles directory
+     * Attempts to make a connection to the sender
      *
-     * @param socket the TCP socket the file will be read over
+     * @return true if attempt successful, otherwise false
      *
      * @author Euan Gilmour
      */
-    private void receiveFile(Socket socket) throws IOException {
+    private boolean attemptConnection() {
+        try  {
+            socket = new Socket(senderHost, portNo);
+            System.out.println("Connection established with <" + senderUsername + ">, beginning file transfer.");
+            connectionEstablished = true;
+            return true;
+        } catch (IOException e) {
+            System.out.println("Something wen wrong while connecting");
+            return false;
+        }
+    }
+
+
+    /**
+     * Receives a file over TCP and saves it in the user's drocsidFiles directory
+     *
+     *
+     * @author Euan Gilmour
+     */
+    private void receiveFile() throws IOException {
 
         // Verify that drocsidFiles directory exists. Create it if not
         Path filesDirectory = Paths.get(System.getProperty("user.dir"), "drocsidFiles");
@@ -91,6 +134,8 @@ public class FileReceiver implements Runnable {
             while ((bytesRead = dataInputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
             }
+
+            System.out.println("Successfully received file '" + fileName + "' from user <" + senderUsername + ">");
 
         }
 
