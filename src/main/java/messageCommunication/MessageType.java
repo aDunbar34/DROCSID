@@ -15,6 +15,7 @@ public enum MessageType {
 
     SELECT_ROOM,
 
+    ONLINE_STATUSES,
     CREATE_ROOM,
 
     ADD_MEMBERS,
@@ -22,6 +23,8 @@ public enum MessageType {
     FILE_SEND_SIGNAL,
     FILE_RECEIVE_SIGNAL,
     FILE_LISTEN_SIGNAL;
+
+
 
     @JsonValue
     public String toJson() {

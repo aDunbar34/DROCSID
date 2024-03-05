@@ -1,5 +1,6 @@
 package server;
 
+import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -123,6 +124,18 @@ public class NonBlockingServerProducer implements Runnable {
     }
 
     /**
+     *
+     * Returns a list of all clients in the server
+     * @return A list of connected clients in the server
+     * @author Adam Dunbar
+     *
+     * */
+
+    public synchronized List<ClientData> getClientsInServer() {
+        return (List<ClientData>) connectedClients.values();
+    }
+
+    /**
      * Closes the connection of the key parameter and removes the client associates from the {@link #connectedClients}.
      *
      * @param key the selection key of the socket channel to be removed
@@ -213,6 +226,7 @@ public class NonBlockingServerProducer implements Runnable {
      */
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
+        System.out.println(buffer);
         clientChannel.write(buffer);
         System.out.println("Messaged Client");
     }

@@ -57,11 +57,23 @@ public class ClientConsumer implements Runnable {
                     case TEXT -> handleTextMessage(messageParsed);
                     case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
+                    case ONLINE_STATUSES -> handleOnlineStatuses(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Prints the list of users currently online
+     *
+     * @param message
+     *
+     * @author Adam Dunbar
+     */
+    public void handleOnlineStatuses(Message message) {
+        System.out.println(message.getTextMessage());
     }
 
     /**

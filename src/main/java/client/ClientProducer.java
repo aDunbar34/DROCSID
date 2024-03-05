@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
+import server.NonBlockingServerProducer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -14,6 +15,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -100,6 +105,7 @@ public class ClientProducer implements Runnable {
                 case "\\create" -> createRoom(commandArgs);
                 case "\\add" -> addMembersToRoom(commandArgs);
                 case "\\exit" -> exitRoom();
+                case "\\online" -> showOnline();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -285,6 +291,23 @@ public class ClientProducer implements Runnable {
         } catch (JsonProcessingException e) {
             System.out.println("Error: Leaving room - could not be parsed");
         }
+    }
+
+
+    /**
+     * Displays a list of the currently online users in the chatroom
+     *
+     * @author Adam Dunbar
+     */
+    public void showOnline() {
+        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
+        try {
+            out.println(objectMapper.writeValueAsString(toServer));//send message to server
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return;
     }
 
     /**

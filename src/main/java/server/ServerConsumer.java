@@ -7,6 +7,9 @@ import messageCommunication.MessageType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -45,11 +48,41 @@ public class ServerConsumer extends Thread{
                         clientsInRoom.remove(senderData);//remove the client that sent it as they already will have the message
                         for (ClientData clientInRoom: clientsInRoom){//send the message to all the clients currently in that room
                             byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(message);
-                            System.out.println("Sending message: "+message.getTextMessage()+ " to "+clientInRoom.getUsername() +" in room: "+clientInRoom.getCurrentRoom());
+                            System.out.println("Sending message: " + message.getTextMessage() + " to "+clientInRoom.getUsername() +" in room: "+clientInRoom.getCurrentRoom());
                             nonBlockingServer.writeDataToClient(clientInRoom.getUserChannel(), messageAsByteJSON);
-
                         }
                     }
+
+                    case ONLINE_STATUSES -> {
+                        String onlineStatuses = "";
+                        if (senderData.getCurrentRoom() != null) {
+                            String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
+                            List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
+
+                            synchronized (clientsInRoom) {
+                                // Create the message to display as response
+                                onlineStatuses = "Users in Room: \n";
+                                for (ClientData clientInRoom: clientsInRoom) {
+                                    onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
+                                }
+                            }
+
+                        } else if (senderData.getCurrentRoom() == null) {
+                            List<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                            synchronized (clientsInServer) {
+                                // Create the message to display as response
+                                onlineStatuses = "Users in Server: \n";
+                                for (ClientData clientInServer: clientsInServer) {
+                                    onlineStatuses += "- " + clientInServer.getUsername() + "\n";
+                                }
+                            }
+                        }
+                        Message clientMessage = new Message(0, MessageType.ONLINE_STATUSES , senderData.getUsername(), null, System.currentTimeMillis(), onlineStatuses );
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                    }
+
                     case SELECT_ROOM -> {//select rooms so that we send the message to the user(s) only if they are currently in that room, else we save to history and send message when history
                         String room = null;
                         if(message.getTargetId() == null){
@@ -85,6 +118,7 @@ public class ServerConsumer extends Thread{
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
+
                     case ROOMS -> {//return all rooms available to user
                         byte[] roomsAsBytes = objectMapper.writeValueAsBytes(senderData.getUserRooms().toArray());
 
@@ -92,6 +126,7 @@ public class ServerConsumer extends Thread{
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
+
                     case INITIALISATION -> {//set up address that user has and return rooms
 //                        nonBlockingServer.addConnectedClient(keyOfMessage, message.getSenderId());
                         //TODO error here
@@ -181,6 +216,8 @@ public class ServerConsumer extends Thread{
                         //ADD rooms to each user in storage
                     }
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
+                    //eventually add a create room
+
                     default -> {
 
                     }
