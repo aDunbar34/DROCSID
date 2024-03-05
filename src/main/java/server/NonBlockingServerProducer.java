@@ -27,6 +27,8 @@ public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
 
+//    private Map<String, Object> files;
+
     private HashSet<String> allRooms;
 
     LinkedBlockingQueue<Message> queueOfMessageToBeRead;
@@ -230,6 +232,9 @@ public class NonBlockingServerProducer implements Runnable {
         clientChannel.write(buffer);
         System.out.println("Messaged Client");
     }
+
+    //File operations:
+
 
 
 }
