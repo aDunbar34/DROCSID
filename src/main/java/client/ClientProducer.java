@@ -455,11 +455,14 @@ public class ClientProducer implements Runnable {
         // Prepare and send new FILE_SEND_SIGNAL Message to the server
         String fileName = filePath.getFileName().toString();
         String payload = fileName + ',' + pathString + ',' + recipient + ',' + portNo;
-        Message fileListenSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomId, System.currentTimeMillis(), payload);
-        try {
-            out.println(objectMapper.writeValueAsString(fileListenSignalMessage));
-        } catch (JsonProcessingException e) {
-            System.out.println("ERROR: Something went wrong while trying to send a FILE_LISTEN_SIGNAL message to the server");
+        synchronized (chatRoomData) {
+            Message fileListenSignalMessage = new Message(0, MessageType.FILE_SEND_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), payload);
+            try {
+                out.println(objectMapper.writeValueAsString(fileListenSignalMessage));
+            } catch (JsonProcessingException e) {
+                System.out.println("ERROR: Something went wrong while trying to send a FILE_SEND_SIGNAL message to the server");
+                return;
+            }
         }
 
         System.out.println("Signalling file transfer to server...");
