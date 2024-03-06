@@ -113,10 +113,10 @@ public class NonBlockingServerProducer implements Runnable {
      * @return A list of connected clients in the room given
      * @author Robbie Booth
      * */
-    public synchronized List<ClientData> getClientsInRoom(String room){
+    public List<ClientData> getClientsInRoom(String room){
         List<ClientData> clientsInRoom = new ArrayList<>();
         for (ClientData clientData: connectedClients.values()){
-            if(clientData.getCurrentRoom().equals(room)){
+            if(clientData.getCurrentRoom() != null && clientData.getCurrentRoom().equals(room)){
                 clientsInRoom.add(clientData);
             }
         }
@@ -144,12 +144,14 @@ public class NonBlockingServerProducer implements Runnable {
      */
     private void closeConnection(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
-        for (ClientData clientData:connectedClients.values()
-             ) {
-            if(clientData.getUserChannel().equals(clientChannel)){
-                connectedClients.remove(clientData.getUsername());
-            }
+        synchronized (connectedClients) {
+            for (ClientData clientData : connectedClients.values()
+            ) {
+                if (clientData.getUserChannel().equals(clientChannel)) {
+                    connectedClients.remove(clientData.getUsername());
+                }
 
+            }
         }
         clientChannel.close();
     }
@@ -210,11 +212,13 @@ public class NonBlockingServerProducer implements Runnable {
         //TODO make system to read rooms that client is in from saved
         //TODO make check that client current room isn't null else where as it will be null here
         //TODO make error if client is already connected and kill connection with the client trying to impersonate
-        if(connectedClients.containsKey(username)){
-            return;
+        synchronized (connectedClients) {
+            if (connectedClients.containsKey(username)) {
+                return;
+            }
+            ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
+            connectedClients.put(username, clientData);
         }
-        ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
-        connectedClients.put(username, clientData);
     }
 
     /**
