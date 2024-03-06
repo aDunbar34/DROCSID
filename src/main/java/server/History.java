@@ -2,7 +2,7 @@ package server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.UserMessage;
 
@@ -60,12 +60,34 @@ public class History {
     /**
      * Reads the users rooms that they have access to and returns a list of rooms they have access to. If file
      * doesn't exist empty array is returned.
-     * @param username name of user whose rooms they belong to
      *
+     * @param username name of user whose rooms they belong to
+     * @return list of rooms user has access to
      * @author Robbie Booth
      */
-    public void readUsersRooms(String username){
+    public static List<String> readUsersRooms(String username) throws IOException {
+        List<String> rooms = new ArrayList<>();
+        File file = new File(usersPathDir.toFile(), username+".json");
+        if(!file.exists()){
+            return rooms;
+        }
 
+        String jsonString = readFileContents(file);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try{
+            JsonNode jsonNode = objectMapper.readTree(jsonString);
+            JsonNode roomsNode = jsonNode.get("rooms");
+            if (roomsNode.isArray()) {
+                for (JsonNode roomNode : roomsNode) {
+                    rooms.add(roomNode.asText());
+                }
+            }
+        }catch (JsonProcessingException e){
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+
+        return rooms;
     }
 
     /**
@@ -328,7 +350,19 @@ public class History {
 //        List<UserMessage> userMessages = History.readRoomHistory("hello");
 //        // Perform operations on the list of UserMessage objects
 //        System.out.println(userMessages.size());
-        UserMessage userMessage = new UserMessage("Robbie", System.currentTimeMillis(), "hello new message");
-        History.addMessageToHistory(userMessage, "he");
+//        UserMessage userMessage = new UserMessage("Robbie", System.currentTimeMillis(), "hello new message22");
+//        History.addMessageToHistory(userMessage, "he");
+//        List<UserMessage> userMessages = History.readRoomHistory("he");
+//
+//        // Perform operations on the list of UserMessage objects
+//        for (UserMessage userMessage : userMessages) {
+//            System.out.println("Read UserMessage: " + userMessage.getMessage());
+//        }
+
+        List<String> usersRooms = History.readUsersRooms("robert");
+        System.out.println("size:" + usersRooms.size());
+        for (String room: usersRooms){
+            System.out.println(room);
+        }
     }
 }
