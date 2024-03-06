@@ -9,10 +9,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.util.*;
 import java.util.ArrayList;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
@@ -68,7 +66,7 @@ public class ServerConsumer extends Thread{
                             }
 
                         } else if (senderData.getCurrentRoom() == null) {
-                            List<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+                            Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
 
                             synchronized (clientsInServer) {
                                 // Create the message to display as response

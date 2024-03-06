@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
+    private final Object connectedClientLock = new Object();
 
 //    private Map<String, Object> files;
 
@@ -115,10 +116,10 @@ public class NonBlockingServerProducer implements Runnable {
      * @return A list of connected clients in the room given
      * @author Robbie Booth
      * */
-    public synchronized List<ClientData> getClientsInRoom(String room){
+    public List<ClientData> getClientsInRoom(String room){
         List<ClientData> clientsInRoom = new ArrayList<>();
         for (ClientData clientData: connectedClients.values()){
-            if(clientData.getCurrentRoom().equals(room)){
+            if(clientData.getCurrentRoom() != null && clientData.getCurrentRoom().equals(room)){
                 clientsInRoom.add(clientData);
             }
         }
@@ -133,8 +134,8 @@ public class NonBlockingServerProducer implements Runnable {
      *
      * */
 
-    public synchronized List<ClientData> getClientsInServer() {
-        return (List<ClientData>) connectedClients.values();
+    public synchronized Collection<ClientData> getClientsInServer() {
+        return  connectedClients.values();
     }
 
     /**
@@ -146,12 +147,18 @@ public class NonBlockingServerProducer implements Runnable {
      */
     private void closeConnection(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
-        for (ClientData clientData:connectedClients.values()
-             ) {
-            if(clientData.getUserChannel().equals(clientChannel)){
-                connectedClients.remove(clientData.getUsername());
+        String usernameToRemove = null;
+        synchronized (connectedClientLock) {
+            for (Iterator<ClientData> iterator = connectedClients.values().iterator(); iterator.hasNext();) {
+                ClientData clientData = iterator.next();
+                if (clientData.getUserChannel().equals(clientChannel)) {
+                    usernameToRemove = clientData.getUsername();
+                }
             }
-
+            if(usernameToRemove != null){
+                connectedClients.remove(usernameToRemove);
+                System.out.println(usernameToRemove +" disconnected!");
+            }
         }
         clientChannel.close();
     }
@@ -212,11 +219,13 @@ public class NonBlockingServerProducer implements Runnable {
         //TODO make system to read rooms that client is in from saved
         //TODO make check that client current room isn't null else where as it will be null here
         //TODO make error if client is already connected and kill connection with the client trying to impersonate
-        if(connectedClients.containsKey(username)){
-            return;
+        synchronized (connectedClientLock) {
+            if (connectedClients.containsKey(username)) {
+                return;
+            }
+            ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
+            connectedClients.put(username, clientData);
         }
-        ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
-        connectedClients.put(username, clientData);
     }
 
     /**
