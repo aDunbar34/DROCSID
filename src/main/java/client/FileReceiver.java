@@ -39,6 +39,7 @@ public class FileReceiver implements Runnable {
     public void run() {
 
         System.out.println("User <" + senderUsername + "> wants to send you a file '" + fileName + "'");
+        System.out.println("I think the sender host is: " + senderHost);
         System.out.println("Attempting to connect to <" + senderUsername + ">");
 
         // Schedule a connection attempt task with a timeout
@@ -61,6 +62,8 @@ public class FileReceiver implements Runnable {
                 e.printStackTrace();
             }
         }
+
+        timer.cancel();
 
         if (!connectionEstablished) {
             System.out.println("ERROR: Unable to establish a connection with <" + senderUsername + ">");

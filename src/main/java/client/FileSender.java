@@ -36,6 +36,7 @@ public class FileSender implements Runnable {
     public void run() {
 
         System.out.println("Attempting to send file '" + file.getName() + "' to user <" + recipientUsername + "> over port " + portNo);
+        System.out.println("I think the receiver host is: " + recipientHost);
 
         // Set up TCP listener
         try (ServerSocket listenerSocket = new ServerSocket(portNo)) {
