@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import messageCommunication.UserMessage;
 
 import java.io.File;
@@ -15,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class History {
@@ -201,7 +204,7 @@ public class History {
             // Read the entire content into the byte array
             fileReader.readFully(content);
 
-            // Convert the byte array to a String (assuming the file contains text)
+            // Convert the byte array to a String
             fileContent = new String(content);
 
         } catch (Exception e) {
@@ -283,8 +286,170 @@ public class History {
      *
      * @author Robbie Booth
      */
-    public void addUsersToRoom(String roomName, List<String> usernames){
+    public static void addUsersToRoom(String roomName, List<String> usernames) throws IOException {
+        //Room stuff:
+        File roomLocation = new File(roomsPathDir.toFile(), roomName);
+        //create user path directory if it does not exist
+        History.checkPathElseCreate(roomLocation.toPath());
+        File roomMessagesFile = new File(roomLocation, roomMessageFileName);
+        File roomDataFile = new File(roomLocation, roomDataFileName);
+        RandomAccessFile roomFileWriter = null;
+        FileChannel roomChannel = null;
+        FileLock roomLock = null;
 
+        //User stuff:
+
+        try {
+            // Open the file in read-write mode
+            roomFileWriter = new RandomAccessFile(roomDataFile, "rw");
+            roomChannel = roomFileWriter.getChannel();
+
+            roomLock = roomChannel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+
+            // Read the content:
+            // Set the file pointer to the beginning of the file to overwrite its content
+            roomFileWriter.seek(0);
+            long fileLength = roomFileWriter.length();
+            byte[] content = new byte[(int) fileLength];
+            roomFileWriter.readFully(content);
+
+            // Convert the byte array to a String
+            String jsonString = new String(content);
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            HashSet<String> usersInRoom = new HashSet<>(usernames);//add all the new users to the set
+            //then get the ones currently in it and add them as well
+            String changedContent = null;
+            if(!jsonString.isBlank()) {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(jsonString);
+                    JsonNode roomsNode = rootNode.get("users");
+                    if (roomsNode.isArray()) {
+                        for (JsonNode roomNode : roomsNode) {
+                            usersInRoom.add(roomNode.asText());
+                        }
+                    }
+                    ArrayNode newUsersNode = objectMapper.valueToTree(usersInRoom);
+                    ((ObjectNode) rootNode).set("users", newUsersNode);
+                    changedContent = objectMapper.writeValueAsString(rootNode);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                String users = objectMapper.writeValueAsString(usersInRoom);
+                changedContent = "{ \"roomName\": \""+roomName+"\", \"users\": "+users+" }";
+            }
+            if(changedContent != null){
+                //write new history to file
+                roomFileWriter.seek(0);
+                roomFileWriter.setLength(0);
+                roomFileWriter.writeBytes(changedContent);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if(roomLock != null){
+                roomLock.release();
+            }
+            if(roomChannel != null){
+                roomChannel.close();
+            }
+            if(roomFileWriter != null){
+                roomFileWriter.close();
+            }
+        }
+        //If the room didn't exist we also need to make the roomMessages for that room
+        if(!roomMessagesFile.exists()){
+            createRoom(roomName);
+        }
+
+        //Work through each user adding room to their rooms
+        for(String username: usernames){
+            addRoomToUser(username, roomName);
+        }
+    }
+
+    /**
+     * Adds the roomName given to the users rooms. If the user does not exist they are created with that room name.
+     * DO NOT USE FOR UPDATING ROOMS THAT USER BELONGS TO: USE {@link #addUsersToRoom(String, List)} INSTEAD!
+     * @param username name of user to have room added or created
+     * @param roomName name of room to add to the user
+     * @throws IOException
+     */
+    private static void addRoomToUser(String username, String roomName) throws IOException {
+        File file = new File(usersPathDir.toFile(), username+".json");
+        History.checkPathElseCreate(usersPathDir);
+
+        RandomAccessFile fileWriter = null;
+        FileChannel channel = null;
+        FileLock lock = null;
+        try {
+
+            // Open the file in read-write mode
+            fileWriter = new RandomAccessFile(file, "rw");
+            channel = fileWriter.getChannel();
+
+            // Acquire an exclusive lock on the file
+            lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+
+            // Read the content:
+            // Set the file pointer to the beginning of the file to overwrite its content
+            fileWriter.seek(0);
+            long fileLength = fileWriter.length();
+            byte[] content = new byte[(int) fileLength];
+            fileWriter.readFully(content);
+
+            // Convert the byte array to a String
+            String jsonString = new String(content);
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            HashSet<String> usersRooms = new HashSet<>();//add all the new users to the set
+            usersRooms.add(roomName);//add the new room
+
+            //then get the ones currently in it and add them as well
+            String changedContent = null;
+            if(!jsonString.isBlank()) {
+                try {
+                    JsonNode rootNode = objectMapper.readTree(jsonString);
+                    JsonNode roomsNode = rootNode.get("rooms");
+                    if (roomsNode.isArray()) {
+                        for (JsonNode roomNode : roomsNode) {
+                            usersRooms.add(roomNode.asText());
+                        }
+                    }
+                    ArrayNode newRoomsNode = objectMapper.valueToTree(usersRooms);
+                    ((ObjectNode) rootNode).set("rooms", newRoomsNode);
+                    changedContent = objectMapper.writeValueAsString(rootNode);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+            }else{
+                String rooms = objectMapper.writeValueAsString(usersRooms);
+                changedContent = "{ \"username\": \""+username+"\", \"rooms\": "+rooms+" }";
+            }
+            if(changedContent != null){
+                //write new history to file
+                fileWriter.seek(0);
+                fileWriter.setLength(0);
+                fileWriter.writeBytes(changedContent);
+            }
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if(lock != null){
+                lock.release();
+            }
+            if(channel != null){
+                channel.close();
+            }
+            if(fileWriter != null){
+                fileWriter.close();
+            }
+        }
     }
 
     public static void addMessageToHistory(UserMessage message, String roomName) throws IOException {
@@ -311,7 +476,7 @@ public class History {
             byte[] content = new byte[(int) fileLength];
             fileWriter.readFully(content);
 
-            // Convert the byte array to a String (assuming the file contains text)
+            // Convert the byte array to a String
             String fileContent = new String(content);
             List<UserMessage> userMessages = new ArrayList<>();
 
@@ -394,5 +559,11 @@ public class History {
 //        for (String room: usersAllowedInRoom){
 //            System.out.println(room);
 //        }
+        List<String> usernames = new ArrayList<>();
+//        usernames.add("joe1");
+//        usernames.add("joe2");
+        usernames.add("rb2");
+
+        addUsersToRoom("rbHome", usernames);
     }
 }
