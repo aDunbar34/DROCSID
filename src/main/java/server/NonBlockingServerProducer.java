@@ -132,8 +132,8 @@ public class NonBlockingServerProducer implements Runnable {
      *
      * */
 
-    public synchronized List<ClientData> getClientsInServer() {
-        return (List<ClientData>) connectedClients.values();
+    public synchronized Collection<ClientData> getClientsInServer() {
+        return  connectedClients.values();
     }
 
     /**
@@ -145,13 +145,17 @@ public class NonBlockingServerProducer implements Runnable {
      */
     private void closeConnection(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
+        String usernameToRemove = null;
         synchronized (connectedClientLock) {
-            for (ClientData clientData : connectedClients.values()
-            ) {
+            for (Iterator<ClientData> iterator = connectedClients.values().iterator(); iterator.hasNext();) {
+                ClientData clientData = iterator.next();
                 if (clientData.getUserChannel().equals(clientChannel)) {
-                    connectedClients.remove(clientData.getUsername());
+                    usernameToRemove = clientData.getUsername();
                 }
-
+            }
+            if(usernameToRemove != null){
+                connectedClients.remove(usernameToRemove);
+                System.out.println(usernameToRemove +" disconnected!");
             }
         }
         clientChannel.close();
