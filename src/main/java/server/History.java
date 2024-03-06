@@ -54,38 +54,15 @@ public class History {
     }
 
     /**
-     * Creates a room file by the roomName. If file exists then nothing happens.
-     * @param roomName Name of room to create
-     *
-     * @author Robbie Booth
+     * Creates a file with jsonContent if it doesn't already exist else it overrides it with jsonContent.
+     * @param file file to be created
+     * @param jsonContent content to be in file
+     * @throws IOException
      */
-    public void createRoom(String roomName){
-
-    }
-
-
-    /**
-     * Creates a user file of the username provided. If file exists nothing happens.
-     * @param username Name of user to create. If empty no file is created.
-     *
-     * @author Robbie Booth
-     */
-    public static void createUser(String username) throws IOException {
-        //create user path directory if it does not exist
-        History.checkPathElseCreate(usersPathDir);
-
-        File file = new File(usersPathDir.toFile(), username+".json");
-        if(file.exists()){
-            return;
-        }
-        //username invalid
-        if(username == null || username.isBlank()){
-            return;
-        }
+    public static void createOrOverrideFile(File file, String jsonContent) throws IOException {
         RandomAccessFile fileWriter = null;
         FileChannel channel = null;
         FileLock lock = null;
-        String jsonContent = "{ \"username\": \""+username+"\", \"rooms\": [] }";
         try {
 
             // Open the file in read-write mode
@@ -119,6 +96,61 @@ public class History {
     }
 
     /**
+     * Creates a room file by the roomName. If file exists then nothing happens.
+     * @param roomName Name of room to create
+     *
+     * @author Robbie Booth
+     */
+    public static void createRoom(String roomName) throws IOException {
+        //roomName invalid
+        if(roomName == null || roomName.isBlank()){
+            return;
+        }
+
+        File roomLocation = new File(roomsPathDir.toFile(), roomName);
+        //create user path directory if it does not exist
+        History.checkPathElseCreate(roomLocation.toPath());
+        File roomDataFile = new File(roomLocation, "roomData.json");
+        File roomMessagesFile = new File(roomLocation, "roomMessages.json");
+        if(roomDataFile.exists() && roomMessagesFile.exists()){//if both exists don't create
+            return;
+        }
+
+        if(!roomDataFile.exists()){
+            String roomDataFileContent = "{ \"roomName\": \""+roomName+"\" }";
+            createOrOverrideFile(roomDataFile, roomDataFileContent);
+        }
+        if(!roomMessagesFile.exists()){
+            String roomMessageFileContent = "[]";
+            createOrOverrideFile(roomMessagesFile, roomMessageFileContent);
+        }
+    }
+
+
+    /**
+     * Creates a user file of the username provided. If file exists nothing happens.
+     * @param username Name of user to create. If empty no file is created.
+     *
+     * @author Robbie Booth
+     */
+    public static void createUser(String username) throws IOException {
+        //create user path directory if it does not exist
+        History.checkPathElseCreate(usersPathDir);
+
+        File file = new File(usersPathDir.toFile(), username+".json");
+        if(file.exists()){
+            return;
+        }
+        //username invalid
+        if(username == null || username.isBlank()){
+            return;
+        }
+
+        String jsonContent = "{ \"username\": \""+username+"\", \"rooms\": [] }";
+        createOrOverrideFile(file, jsonContent);
+    }
+
+    /**
      * Adds the usernames to the room specified, if the room doesn't exist it is created. If the user is already part
      * of room they will remain in room.
      * @param roomName name of room to add users to
@@ -148,6 +180,6 @@ public class History {
 
 
     public static void main(String[] args) throws IOException {
-        History.createUser("robert");
+        History.createRoom("hello");
     }
 }
