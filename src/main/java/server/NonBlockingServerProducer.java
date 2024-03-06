@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class NonBlockingServerProducer implements Runnable {
 
     private Map<String, ClientData> connectedClients;
+    private final Object connectedClientLock = new Object();
 
     private HashSet<String> allRooms;
 
@@ -144,7 +145,7 @@ public class NonBlockingServerProducer implements Runnable {
      */
     private void closeConnection(SelectionKey key) throws IOException {
         SocketChannel clientChannel = (SocketChannel) key.channel();
-        synchronized (connectedClients) {
+        synchronized (connectedClientLock) {
             for (ClientData clientData : connectedClients.values()
             ) {
                 if (clientData.getUserChannel().equals(clientChannel)) {
@@ -212,7 +213,7 @@ public class NonBlockingServerProducer implements Runnable {
         //TODO make system to read rooms that client is in from saved
         //TODO make check that client current room isn't null else where as it will be null here
         //TODO make error if client is already connected and kill connection with the client trying to impersonate
-        synchronized (connectedClients) {
+        synchronized (connectedClientLock) {
             if (connectedClients.containsKey(username)) {
                 return;
             }
