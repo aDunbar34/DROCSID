@@ -376,6 +376,7 @@ public class History {
      * @param username name of user to have room added or created
      * @param roomName name of room to add to the user
      * @throws IOException
+     * @author Robbie Booth
      */
     private static void addRoomToUser(String username, String roomName) throws IOException {
         File file = new File(usersPathDir.toFile(), username+".json");
@@ -452,6 +453,15 @@ public class History {
         }
     }
 
+    /**
+     * Adds a message to the history file of that room. If room doesn't exist it is created.
+     * If history is more than {@link #maxHistorySize} then oldest message in history file is removed and replaced with message given.
+     * @param message message to be added to the rooms history
+     * @param roomName room to add the message to
+     * @throws IOException
+     *
+     * @author Robbie Booth
+     */
     public static void addMessageToHistory(UserMessage message, String roomName) throws IOException {
         File roomLocation = new File(roomsPathDir.toFile(), roomName);
         //create user path directory if it does not exist
@@ -531,39 +541,5 @@ public class History {
         if(!Files.exists(path)){
             Files.createDirectories(path);
         }
-    }
-
-
-    public static void main(String[] args) throws IOException {
-//        History.createRoom("hello");
-//        List<UserMessage> userMessages = History.readRoomHistory("hello");
-//        // Perform operations on the list of UserMessage objects
-//        System.out.println(userMessages.size());
-//        UserMessage userMessage = new UserMessage("Robbie", System.currentTimeMillis(), "hello new message22");
-//        History.addMessageToHistory(userMessage, "he");
-//        List<UserMessage> userMessages = History.readRoomHistory("he");
-//
-//        // Perform operations on the list of UserMessage objects
-//        for (UserMessage userMessage : userMessages) {
-//            System.out.println("Read UserMessage: " + userMessage.getMessage());
-//        }
-
-//        List<String> usersRooms = History.readUsersRooms("robert");
-//        System.out.println("size:" + usersRooms.size());
-//        for (String room: usersRooms){
-//            System.out.println(room);
-//        }
-
-//        List<String> usersAllowedInRoom = History.readUsersAllowedInRoom("hello");
-//        System.out.println("size:" + usersAllowedInRoom.size());
-//        for (String room: usersAllowedInRoom){
-//            System.out.println(room);
-//        }
-        List<String> usernames = new ArrayList<>();
-//        usernames.add("joe1");
-//        usernames.add("joe2");
-        usernames.add("rb2");
-
-        addUsersToRoom("rbHome", usernames);
     }
 }
