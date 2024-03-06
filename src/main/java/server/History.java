@@ -92,12 +92,36 @@ public class History {
 
     /**
      * Reads all the users in room file and returns list of users. If room doesn't exist empty array is returned.
-     * @param roomName Name of room to get users who have access to
      *
+     * @param roomName Name of room to get users who have access to
+     * @return
      * @author Robbie Booth
      */
-    public void readUsersAllowedInRoom(String roomName){
+    public static List<String> readUsersAllowedInRoom(String roomName) throws IOException {
+        List<String> usersAllowedInRoom = new ArrayList<>();
+        File roomLocation = new File(roomsPathDir.toFile(), roomName);
+        //create user path directory if it does not exist
+        File roomDataFile = new File(roomLocation, roomDataFileName);
+        if(!roomDataFile.exists()){
+            return usersAllowedInRoom;
+        }
 
+        String jsonString = readFileContents(roomDataFile);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try{
+            JsonNode jsonNode = objectMapper.readTree(jsonString);
+            JsonNode roomsNode = jsonNode.get("users");
+            if (roomsNode.isArray()) {
+                for (JsonNode roomNode : roomsNode) {
+                    usersAllowedInRoom.add(roomNode.asText());
+                }
+            }
+        }catch (JsonProcessingException e){
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+
+        return usersAllowedInRoom;
     }
 
     /**
@@ -359,10 +383,16 @@ public class History {
 //            System.out.println("Read UserMessage: " + userMessage.getMessage());
 //        }
 
-        List<String> usersRooms = History.readUsersRooms("robert");
-        System.out.println("size:" + usersRooms.size());
-        for (String room: usersRooms){
-            System.out.println(room);
-        }
+//        List<String> usersRooms = History.readUsersRooms("robert");
+//        System.out.println("size:" + usersRooms.size());
+//        for (String room: usersRooms){
+//            System.out.println(room);
+//        }
+
+//        List<String> usersAllowedInRoom = History.readUsersAllowedInRoom("hello");
+//        System.out.println("size:" + usersAllowedInRoom.size());
+//        for (String room: usersAllowedInRoom){
+//            System.out.println(room);
+//        }
     }
 }
