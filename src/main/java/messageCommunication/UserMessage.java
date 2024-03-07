@@ -4,7 +4,7 @@ package messageCommunication;
  * The messages that are used in history. These are what is sent between users.
  * @author Robbie Booth
  */
-public class UserMessage {
+public class UserMessage implements Comparable<UserMessage> {
 
     private final String senderId;//Id/username of sender
 
@@ -35,5 +35,15 @@ public class UserMessage {
 
     public String getMessage() {
         return message;
+    }
+
+    /**
+     * Sorts the UserMessages by timestamp. Lower timestamp being -1, same 0, and higher timestamp being 1
+     * @param o the object to be compared.
+     * @author Robbie Booth
+     */
+    @Override
+    public int compareTo(UserMessage o) {
+        return Long.compare(this.timestamp, o.timestamp);
     }
 }

@@ -15,6 +15,8 @@ public enum MessageType {
 
     SELECT_ROOM,
 
+    HISTORY,
+
     ONLINE_STATUSES,
     CREATE_ROOM,
 

@@ -13,12 +13,11 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class History {
 
@@ -541,5 +540,44 @@ public class History {
         if(!Files.exists(path)){
             Files.createDirectories(path);
         }
+    }
+
+    /**
+     * Reads all the rooms that are contained in the rooms' directory. Returns empty list if rooms directory doesn't exist.
+     * @return list of names of rooms
+     * @author Robbie Booth
+     */
+    public static Collection<String> readAllRoomNames() {
+        Set<String> rooms = new HashSet<>();
+
+        //Path doesn't exist so return empty list
+        if(!Files.isDirectory(roomsPathDir)){
+            return rooms;
+        }
+
+        DirectoryStream<Path> directoryStream = null;
+        try {
+            directoryStream = Files.newDirectoryStream(roomsPathDir);
+
+            for (Path path : directoryStream) {
+                //Check if the current path is a directory
+                if (Files.isDirectory(path)) {
+                    rooms.add(path.getFileName().toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            try{
+                if(directoryStream != null){
+                    directoryStream.close();
+                }
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+
+        }
+        return rooms;
     }
 }

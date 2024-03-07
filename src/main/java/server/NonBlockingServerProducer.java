@@ -1,6 +1,5 @@
 package server;
 
-import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,8 +27,6 @@ public class NonBlockingServerProducer implements Runnable {
     private Map<String, ClientData> connectedClients;
     private final Object connectedClientLock = new Object();
 
-//    private Map<String, Object> files;
-
     private HashSet<String> allRooms;
 
     LinkedBlockingQueue<Message> queueOfMessageToBeRead;
@@ -40,7 +37,9 @@ public class NonBlockingServerProducer implements Runnable {
         queueOfMessageToBeRead = queue;
         connectedClients = new HashMap<String, ClientData>();
         this.portNumber = portNumber;
-        this.allRooms = new HashSet<>();
+        Collection<String> rooms = History.readAllRoomNames();
+        System.out.println("Loaded rooms from history: "+String.join(", ", rooms));
+        this.allRooms = new HashSet<>(rooms);
     }
 
     @Override
@@ -223,7 +222,15 @@ public class NonBlockingServerProducer implements Runnable {
             if (connectedClients.containsKey(username)) {
                 return;
             }
-            ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
+            ClientData clientData;
+            try{
+                clientData = new ClientData(username, clientChannel, new HashSet<>(History.readUsersRooms(username)));
+                History.createUser(username);//Create user if it doesn't exist. Else this does nothing
+            } catch (IOException e) {
+                e.printStackTrace();
+                clientData = new ClientData(username, clientChannel, new HashSet<>());
+            }
+
             connectedClients.put(username, clientData);
         }
     }
@@ -237,7 +244,6 @@ public class NonBlockingServerProducer implements Runnable {
      */
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
-        System.out.println(buffer);
         clientChannel.write(buffer);
         System.out.println("Messaged Client");
     }
