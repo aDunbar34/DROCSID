@@ -499,6 +499,7 @@ public class History {
                 }
             }
             if(userMessages.size() >= maxHistorySize){
+                Collections.sort(userMessages);//Sort the messages by timestamp
                 userMessages.remove(0);//remove the oldest one
             }
             userMessages.add(message);
