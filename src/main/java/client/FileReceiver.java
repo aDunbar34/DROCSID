@@ -93,7 +93,7 @@ public class FileReceiver implements Runnable {
             connectionEstablished = true;
             return true;
         } catch (IOException e) {
-            System.out.println("Something wen wrong while connecting");
+            System.out.println("WARNING: Connection attempt failed, trying again...");
             return false;
         }
     }
