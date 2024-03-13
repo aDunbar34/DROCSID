@@ -106,6 +106,7 @@ public class ClientProducer implements Runnable {
                 case "\\add" -> addMembersToRoom(commandArgs);
                 case "\\exit" -> exitRoom();
                 case "\\online" -> showOnline();
+                case "\\reply" -> handleReplies(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -152,6 +153,10 @@ public class ClientProducer implements Runnable {
         } catch (JsonProcessingException e) {
             System.out.println("Error: add members to room could not be parsed");
         }
+    }
+
+    private void handleReplies(String[] args) {
+
     }
 
     /**
