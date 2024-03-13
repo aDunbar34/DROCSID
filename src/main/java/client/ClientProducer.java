@@ -105,6 +105,9 @@ public class ClientProducer implements Runnable {
                 case "\\add" -> addMembersToRoom(commandArgs);
                 case "\\exit" -> exitRoom();
                 case "\\online" -> showOnline();
+                case "\\friends" -> showFriends();
+                case "\\sendRequest" -> handleSendRequests(commandArgs);
+                case "\\accept" -> handleAcceptRequest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -120,6 +123,18 @@ public class ClientProducer implements Runnable {
                 }
             }
         }
+    }
+
+    private void handleAcceptRequest(String[] args) {
+    }
+
+    private void viewFriendRequests() {
+    }
+
+    private void handleSendRequests(String[] args) {
+    }
+
+    private void showFriends() {
     }
 
 
@@ -239,6 +254,12 @@ public class ClientProducer implements Runnable {
                     System.out.println("E.g: for adding two users \\add TheCrew fred scooby");
                 }
                 case 4 ->{
+                    System.out.println("You've selected to view your friend requests");
+                    viewFriendRequests();
+                    System.out.println("To send a Friend Request do \\sendRequest <Username>");
+                    System.out.println("To Accept a Friend Request do \\accept <Username>");
+                }
+                case 5 ->{
                     System.out.println("You've selected disconnect");
                     System.out.println("NOT IMPLEMENTED YET");//TODO implement
                     //disconnect
