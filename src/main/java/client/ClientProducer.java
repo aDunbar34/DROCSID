@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
