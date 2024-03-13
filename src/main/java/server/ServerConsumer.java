@@ -4,6 +4,7 @@ import client.ClientData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
+import messageCommunication.UserMessage;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -42,6 +43,17 @@ public class ServerConsumer extends Thread{
                 switch (message.getType()){
                     case TEXT -> {//add text to the room the user currently is in and send to other users in that room
                         String currentRoom = senderData.getCurrentRoom();//out of sync problem potentially here
+
+                        //Add message to room history:
+                        UserMessage userMessage = new UserMessage(senderData.getUsername(), message.getTimestamp(), message.getTextMessage());
+                        try{
+                            History.addMessageToHistory(userMessage, currentRoom);
+                        }catch (IOException e){
+                            e.printStackTrace();
+                            System.out.println("IO Exception saving "+senderData.getUsername() +" message to room " + currentRoom+" history!");
+                        }
+
+                        //Message the clients
                         List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
                         clientsInRoom.remove(senderData);//remove the client that sent it as they already will have the message
                         for (ClientData clientInRoom: clientsInRoom){//send the message to all the clients currently in that room
@@ -115,6 +127,12 @@ public class ServerConsumer extends Thread{
                         Message response = new Message(0, MessageType.SELECT_ROOM, senderData.getUsername(), room , System.currentTimeMillis(), "success");
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                        //Then Send history:
+                        byte[] historyMessages = objectMapper.writeValueAsBytes(History.readRoomHistory(room));
+                        Message historyResponse = new Message(0, MessageType.HISTORY, senderData.getUsername(), room, System.currentTimeMillis(), historyMessages);
+                        messageAsByteJSON = objectMapper.writeValueAsBytes(historyResponse);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
 
                     case ROOMS -> {//return all rooms available to user
@@ -148,21 +166,24 @@ public class ServerConsumer extends Thread{
                             break;
                         }
 
+                        //Add the room to all users data and rooms data add all users. This also creates the room and user if they don't exist
+                        List<String> usersInRoom = new ArrayList<>(List.of(usernames));
+                        usersInRoom.add(message.getSenderId());
+                        History.addUsersToRoom(message.getTargetId(), usersInRoom);
+
                         //add rooms to each user in memory
-                        for(String username: usernames){
+                        for(String username: usersInRoom){
                             ClientData clientData = nonBlockingServer.getClientData(username);
                             if(clientData != null){
                                 synchronized (clientData) {
                                     clientData.addRoom(message.getTargetId());
                                 }
                             }
-                            //TODO when user is offline still add to storage
                         }
 
                         Message response = new Message(0, MessageType.CREATE_ROOM, senderData.getUsername(), null, System.currentTimeMillis(), "Room: "+message.getTargetId()+" created!");
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
-                        //add rooms to each user in storage (add to queue of history/file updates)
                     }
                     case ADD_MEMBERS -> {
                         String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
@@ -171,7 +192,6 @@ public class ServerConsumer extends Thread{
                         //Create room
                         synchronized (allRooms){
                             if (allRooms.contains(message.getTargetId())){
-
                                 roomExists = true;
                             }
                         }
@@ -193,6 +213,12 @@ public class ServerConsumer extends Thread{
                             break;
                         }
 
+                        //Add the room to all users data and rooms data add all users. This also creates the room and user if they don't exist
+                        List<String> usersInRoom = new ArrayList<>(List.of(usernames));
+                        usersInRoom.add(message.getSenderId());//add sender if already not contained
+                        History.addUsersToRoom(message.getTargetId(), usersInRoom);
+
+
                         List<String> usersAddedToRoom = new ArrayList<>();
                         //add rooms to each user in memory
                         for(String username: usernames){
@@ -203,7 +229,6 @@ public class ServerConsumer extends Thread{
                                 }
 
                             }
-                            //TODO do so they have rooms offline
                             System.out.println("Adding room: "+message.getTargetId() + " to "+username+" rooms! - Requested by: "+message.getSenderId());
                             usersAddedToRoom.add(username);
                         }
