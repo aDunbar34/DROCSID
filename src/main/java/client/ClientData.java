@@ -47,7 +47,15 @@ public class ClientData {
         this.friends = new HashSet<>();
     }
 
-
+    public ClientData(String username, Set<String> userRooms, Set<String> incomingFriendRequests, Set<String> outgoingFriendRequests, Set<String> friends) {
+        this.username = username;
+        this.userRooms = userRooms;
+        this.incomingFriendRequests = incomingFriendRequests;
+        this.outgoingFriendRequests = outgoingFriendRequests;
+        this.friends = friends;
+        this.currentRoom = null;
+        this.userChannel = null;
+    }
 
     public SocketChannel getUserChannel() {
         return userChannel;

@@ -99,8 +99,49 @@ public class History {
      * @return {@link ClientData} if the user exists else it returns null
      * @author Robbie Booth
      */
-    public static ClientData readUser(String username){
-        return null;
+    public static ClientData readUser(String username) throws IOException {
+        File file = new File(usersPathDir.toFile(), username+".json");
+        if(!file.exists()){
+            return null;
+        }
+
+        String jsonString = readFileContents(file);
+        ObjectMapper objectMapper = new ObjectMapper();
+        Set<String> roomsSet = new HashSet<>();
+        Set<String> outgoingFriendRequestsSet = new HashSet<>();
+        Set<String> incomingFriendRequestsSet = new HashSet<>();
+        Set<String> friendsSet = new HashSet<>();
+        try{
+            JsonNode jsonNode = objectMapper.readTree(jsonString);
+            roomsSet = convertNodeToSet(jsonNode.get("rooms"));
+            outgoingFriendRequestsSet = convertNodeToSet(jsonNode.get("outgoingFriendRequests"));
+            incomingFriendRequestsSet = convertNodeToSet(jsonNode.get("incomingFriendRequests"));
+            friendsSet = convertNodeToSet(jsonNode.get("friends"));
+        }catch (JsonProcessingException e){
+            e.printStackTrace();
+            return null;
+        }
+        return new ClientData(username,roomsSet, incomingFriendRequestsSet, outgoingFriendRequestsSet, friendsSet);
+    }
+
+    /**
+     * Takes a json node and if its an array it loops through the object and returns a set. If the node is null, an empty set is returned.
+     * @param node node to be converted into a set. If the node is null, an empty set is returned.
+     * @return a set of the values of the node. If the node is null, an empty set is returned.
+     * @author Robbie Booth
+     */
+    private static Set<String> convertNodeToSet(JsonNode node){
+        Set<String> set = new HashSet<>();
+        if(node == null || node.isNull()){
+            return set;
+        }
+
+        if (node.isArray()) {
+            for (JsonNode textNode : node) {
+                set.add(textNode.asText());
+            }
+        }
+        return set;
     }
 
     /**
