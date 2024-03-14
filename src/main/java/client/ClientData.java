@@ -47,6 +47,8 @@ public class ClientData {
         this.friends = new HashSet<>();
     }
 
+
+
     public SocketChannel getUserChannel() {
         return userChannel;
     }

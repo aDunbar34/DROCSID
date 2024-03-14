@@ -1,5 +1,6 @@
 package server;
 
+import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -90,6 +91,38 @@ public class History {
         }
 
         return rooms;
+    }
+
+    /**
+     * Reads the username specified user file if it exists returns the {@link ClientData} else returns null
+     * @param username username to be read
+     * @return {@link ClientData} if the user exists else it returns null
+     * @author Robbie Booth
+     */
+    public static ClientData readUser(String username){
+        return null;
+    }
+
+    /**
+     * Accepts the friend request that the requester sent to the receiver becoming friends. If either the requester
+     * or receiver file doesn't exist, it is created.
+     * @param requester Person who sent the friend request
+     * @param receiver Person who accepted the friend request
+     * @author Robbie Booth
+     */
+    public static void acceptFriendRequest(String requester, String receiver){
+        return;
+    }
+
+    /**
+     * Adds the friend request to the requesters outgoing and receivers incoming files. If either the requester
+     * or receiver file doesn't exist, it is created.
+     * @param requester Person who sent the friend request
+     * @param receiver Person who received the friend request
+     * @author Robbie Booth
+     */
+    public static void sendFriendRequest(String requester, String receiver){
+        return;
     }
 
     /**
