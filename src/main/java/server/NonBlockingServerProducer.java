@@ -224,8 +224,14 @@ public class NonBlockingServerProducer implements Runnable {
             }
             ClientData clientData;
             try{
-                clientData = new ClientData(username, clientChannel, new HashSet<>(History.readUsersRooms(username)));
-                History.createUser(username);//Create user if it doesn't exist. Else this does nothing
+                clientData = History.readUser(username);
+                if(clientData == null){
+                    clientData = new ClientData(username, clientChannel, new HashSet<>());
+                    History.createUser(username); //Create user if it doesn't exist. Else this does nothing
+                }else{
+                    //set user channel as it will be null
+                    clientData.setUserChannel(clientChannel);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 clientData = new ClientData(username, clientChannel, new HashSet<>());
