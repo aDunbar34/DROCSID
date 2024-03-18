@@ -67,12 +67,27 @@ public class ClientConsumer implements Runnable {
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                     case ONLINE_STATUSES -> handleOnlineStatuses(messageParsed);
                     case FRIENDS_LIST -> handleFriendList(messageParsed);
+                    case SEND_FRIEND_REQUEST -> handleSendFriendRequests(messageParsed);
+                    case FRIEND_REQUEST_LIST -> handleFriendRequestList(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Prints a list of users in the clients friend request list
+     *
+     * @param messageParsed display of friend request list
+     *
+     * @author Adam Dunbar
+     */
+
+    private void handleFriendRequestList(Message messageParsed) { System.out.println(messageParsed.getTextMessage());}
+
+
+    private void handleSendFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
 
     /**
      * Prints a list of users in the clients friend list

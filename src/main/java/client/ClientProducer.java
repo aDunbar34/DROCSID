@@ -128,10 +128,33 @@ public class ClientProducer implements Runnable {
     private void handleAcceptRequest(String[] args) {
     }
 
-    private void viewFriendRequests() {
-    }
+
+
+    /**
+     * Sends a Friend Request to the input user
+     *
+     * @param args The input command \sendRequest <Username>
+     * @author Adam Dunbar
+     */
 
     private void handleSendRequests(String[] args) {
+        // Check for incorrect number of arguments
+        if (args.length <= 1) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\sendRequest <member>");
+            return;
+        }
+        // Get name of user to be sent request
+        String potentialFriend = args[1];
+
+        //should error on server if user not in room
+        try{
+            //Send message to add members to room
+            Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Friend Request could not be parsed");
+        }
     }
 
     /**
@@ -281,6 +304,16 @@ public class ClientProducer implements Runnable {
             System.out.println("Unrecognized option!");
         }
     }
+
+    private void viewFriendRequests() {
+        Message toServer = new Message(0, MessageType.FRIEND_REQUEST_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+        try {
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * Terrible way of doing it but displays the possible options on home page

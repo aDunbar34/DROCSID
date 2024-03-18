@@ -1,5 +1,6 @@
 package server;
 
+import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
@@ -63,6 +64,25 @@ public class ServerConsumer extends Thread{
                         }
                     }
 
+                    case FRIEND_REQUEST_LIST -> {
+                        String friendRequestListDisplay = "";
+                        Set<String> friend_request_list = senderData.getIncomingFriendRequests();
+
+                        if (!friend_request_list.isEmpty()) {
+                            friendRequestListDisplay = "Requests: \n";
+                            synchronized (friend_request_list) {
+                                for (String request: friend_request_list) {
+                                    friendRequestListDisplay += "- Request from: " + request;
+                                }
+                            }
+                        } else {
+                            friendRequestListDisplay = "No Friend Requests";
+                        }
+                        Message clientMessage = new Message(0, MessageType.FRIEND_REQUEST_LIST , senderData.getUsername(), null, System.currentTimeMillis(), friendRequestListDisplay);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                    }
                     case FRIENDS_LIST -> {
                         // Uncomment for Testing
 //                         Set<String> templist = new HashSet<String>();
@@ -78,8 +98,6 @@ public class ServerConsumer extends Thread{
                                     friendListDisplay += "- " + friend + "\n";
                                 }
                             }
-                            System.out.println(friendListDisplay);
-                            System.out.println(friend_list);
                         } else {
                             friendListDisplay = "No friends yet";
                         }
@@ -106,9 +124,9 @@ public class ServerConsumer extends Thread{
                         } else if (senderData.getCurrentRoom() == null) {
                             Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
 
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Server: \n";
                             synchronized (clientsInServer) {
-                                // Create the message to display as response
-                                onlineStatuses = "Users in Server: \n";
                                 for (ClientData clientInServer: clientsInServer) {
                                     onlineStatuses += "- " + clientInServer.getUsername() + "\n";
                                 }
@@ -211,6 +229,42 @@ public class ServerConsumer extends Thread{
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
+
+                    case SEND_FRIEND_REQUEST -> {
+                        String username = new String(message.getPayload());
+                        ClientData targetClient = null;
+                        System.out.println(username);
+
+                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                        boolean userExist = false;
+
+                        synchronized (clientsInServer) {
+                            for (ClientData clientData: clientsInServer) {
+                                if (clientData.getUsername().equals(username)) {
+                                    userExist = true;
+                                    targetClient = clientData;
+                                    break;
+                                }
+                            }
+                        }
+
+                        //Break as we cant do anything here as user doesn't exist
+                        if(!userExist){
+                            Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "User: "+ username + " doesn't exist!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        targetClient.addIncomingFriendRequest(senderData.getUsername());
+                        // Send Confirmation to sender
+                        Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "Friend Request sent to: " + username);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                    }
+
                     case ADD_MEMBERS -> {
                         String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
                         Set<String> allRooms = nonBlockingServer.getAllRooms();
@@ -264,6 +318,7 @@ public class ServerConsumer extends Thread{
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                         //ADD rooms to each user in storage
                     }
+
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
                     //eventually add a create room
 

@@ -23,6 +23,9 @@ public enum MessageType {
     ADD_MEMBERS,
 
     FRIENDS_LIST,
+    SEND_FRIEND_REQUEST,
+
+    FRIEND_REQUEST_LIST,
 
     FILE_SEND_SIGNAL,
     FILE_RECEIVE_SIGNAL,

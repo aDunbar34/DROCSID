@@ -101,6 +101,10 @@ public class ClientData {
 
     public void setIncomingFriendRequests(Set<String> incomingFriendRequests) {this.incomingFriendRequests = incomingFriendRequests;}
 
+    public void addIncomingFriendRequest(String username) {
+        this.incomingFriendRequests.add(username);
+    }
+
     public Set<String> getOutgoingFriendRequests() {return outgoingFriendRequests;}
 
     public void setOutgoingFriendRequests(Set<String> outgoingFriendRequests) {this.outgoingFriendRequests = outgoingFriendRequests;}
