@@ -63,15 +63,41 @@ public class ServerConsumer extends Thread{
                         }
                     }
 
+                    case FRIENDS_LIST -> {
+                        // Uncomment for Testing
+//                         Set<String> templist = new HashSet<String>();
+//                         templist.add("tester");
+//                         senderData.setFriends(templist);
+
+                        String friendListDisplay = "";
+                        Set<String> friend_list = senderData.getFriends();
+                        if (!friend_list.isEmpty()) {
+                            friendListDisplay = "Friends: \n";
+                            synchronized (friend_list) {
+                                for (String friend: friend_list) {
+                                    friendListDisplay += "- " + friend + "\n";
+                                }
+                            }
+                            System.out.println(friendListDisplay);
+                            System.out.println(friend_list);
+                        } else {
+                            friendListDisplay = "No friends yet";
+                        }
+                        Message clientMessage = new Message(0, MessageType.FRIENDS_LIST , senderData.getUsername(), null, System.currentTimeMillis(), friendListDisplay);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+
+                    }
+
                     case ONLINE_STATUSES -> {
                         String onlineStatuses = "";
                         if (senderData.getCurrentRoom() != null) {
                             String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
                             List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
-
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Room: \n";
                             synchronized (clientsInRoom) {
-                                // Create the message to display as response
-                                onlineStatuses = "Users in Room: \n";
                                 for (ClientData clientInRoom: clientsInRoom) {
                                     onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
                                 }

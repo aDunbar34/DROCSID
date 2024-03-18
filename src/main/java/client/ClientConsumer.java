@@ -66,12 +66,22 @@ public class ClientConsumer implements Runnable {
                     case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                     case ONLINE_STATUSES -> handleOnlineStatuses(messageParsed);
+                    case FRIENDS_LIST -> handleFriendList(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Prints a list of users in the clients friend list
+     *
+     * @param messageParsed display of friend list
+     *
+     * @author Adam Dunbar
+     */
+    private void handleFriendList(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
 
     /**
      * Takes a history of all the messages and outputs them on the screen

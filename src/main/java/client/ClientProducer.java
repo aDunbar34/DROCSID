@@ -134,7 +134,18 @@ public class ClientProducer implements Runnable {
     private void handleSendRequests(String[] args) {
     }
 
+    /**
+     * Displays a list of the all users in the Clients friend list
+     *
+     * @author Adam Dunbar
+     */
     private void showFriends() {
+        Message toServer = new Message(0, MessageType.FRIENDS_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+        try {
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -322,7 +333,7 @@ public class ClientProducer implements Runnable {
     public void showOnline() {
         Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
         try {
-            out.println(objectMapper.writeValueAsString(toServer));//send message to server
+            out.println(objectMapper.writeValueAsString(toServer)); //send message to server
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
