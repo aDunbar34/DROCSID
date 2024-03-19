@@ -89,6 +89,12 @@ public class ClientConsumer implements Runnable {
 
     private void handleSendFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
 
+    /**
+     * Prints a message that confirms the friend request has been accepted
+     *
+     * @author Lewis Brogan
+     */
+
     private void handleAcceptFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
 
     /**

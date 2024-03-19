@@ -346,7 +346,8 @@ public class ClientProducer implements Runnable {
         System.out.println("1. Join existing room");
         System.out.println("2. Create room");
         System.out.println("3. Add user to room");
-        System.out.println("4. Disconnect");
+        System.out.println("4. View friend requests");
+        System.out.println("5. Disconnect");
         System.out.println("Enter number to select option:");
     }
 
