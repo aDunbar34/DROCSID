@@ -125,9 +125,30 @@ public class ClientProducer implements Runnable {
         }
     }
 
-    private void handleAcceptRequest(String[] args) {
-    }
+    /**
+     * Accepts a friend request from another user
+     *
+     * @param args The input command \accept <Username>
+     * @author Lewis Brogan
+     */
 
+    private void handleAcceptRequest(String[] args) {
+        if (args.length <= 1) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\accept <member>");
+            return;
+        }
+
+        String potentialFriend = args[1];
+
+        try{
+            //Send message to add members to room
+            Message toServer = new Message(0, MessageType.ACCEPT_FRIEND, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Friend Request could not be parsed");
+        }
+    }
 
 
     /**

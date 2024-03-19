@@ -69,6 +69,7 @@ public class ClientConsumer implements Runnable {
                     case FRIENDS_LIST -> handleFriendList(messageParsed);
                     case SEND_FRIEND_REQUEST -> handleSendFriendRequests(messageParsed);
                     case FRIEND_REQUEST_LIST -> handleFriendRequestList(messageParsed);
+                    case ACCEPT_FRIEND -> handleAcceptFriendRequests(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
@@ -86,8 +87,9 @@ public class ClientConsumer implements Runnable {
 
     private void handleFriendRequestList(Message messageParsed) { System.out.println(messageParsed.getTextMessage());}
 
-
     private void handleSendFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
+
+    private void handleAcceptFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
 
     /**
      * Prints a list of users in the clients friend list

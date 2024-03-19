@@ -265,6 +265,52 @@ public class ServerConsumer extends Thread{
 
                     }
 
+                    case ACCEPT_FRIEND -> {
+                        String username = new String(message.getPayload());
+                        ClientData targetClient = null;
+                        Set<String> friend_list = senderData.getFriends();
+                        Set<String> request_list = senderData.getIncomingFriendRequests();
+                        ClientData clientInRoom;
+
+                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                        boolean requestExists = false;
+
+                        synchronized (clientsInServer) {
+                            for (ClientData clientData: clientsInServer) {
+                                if (clientData.getUsername().equals(username)) {
+                                    targetClient = clientData;
+                                    break;
+                                }
+                            }
+                        }
+
+                        synchronized (request_list) {
+                            for (String request : request_list) {
+                                if (username.equals(request)){
+                                    requestExists = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if(!requestExists){
+                            Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "Request: "+ username + " doesn't exist!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        Set<String> sender_friend_list = targetClient.getFriends();
+
+                        friend_list.add(targetClient.getUsername());
+                        sender_friend_list.add(senderData.getUsername());
+
+                        Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "This User has been added to your Friends List: " + username);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                    }
+
                     case ADD_MEMBERS -> {
                         String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
                         Set<String> allRooms = nonBlockingServer.getAllRooms();
