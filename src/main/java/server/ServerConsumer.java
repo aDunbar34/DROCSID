@@ -89,13 +89,20 @@ public class ServerConsumer extends Thread{
 //                         templist.add("tester");
 //                         senderData.setFriends(templist);
 
+                        String onlineStatus = "offline";
                         String friendListDisplay = "";
+
                         Set<String> friend_list = senderData.getFriends();
                         if (!friend_list.isEmpty()) {
                             friendListDisplay = "Friends: \n";
                             synchronized (friend_list) {
                                 for (String friend: friend_list) {
-                                    friendListDisplay += "- " + friend + "\n";
+                                    if (userOnlineCheck(friend)) {
+                                        onlineStatus = "Online";
+                                    } else {
+                                        onlineStatus = "Offline";
+                                    }
+                                    friendListDisplay += "- " + friend + " (" + onlineStatus + ")" + "\n";
                                 }
                             }
                         } else {
@@ -104,8 +111,6 @@ public class ServerConsumer extends Thread{
                         Message clientMessage = new Message(0, MessageType.FRIENDS_LIST , senderData.getUsername(), null, System.currentTimeMillis(), friendListDisplay);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
-
-
                     }
 
                     case ONLINE_STATUSES -> {
@@ -418,9 +423,19 @@ public class ServerConsumer extends Thread{
                 Message fileReceiveSignal = new Message(0, MessageType.FILE_RECEIVE_SIGNAL, message.getSenderId(), senderData.getCurrentRoom(), System.currentTimeMillis(), payload);
                 byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(fileReceiveSignal);
                 nonBlockingServer.writeDataToClient(client.getUserChannel(), messageAsByteJSON);
+            }
+        }
+    }
 
+    public boolean userOnlineCheck(String username) {
+        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+        for (ClientData clientInServer: clientsInServer) {
+            if (clientInServer.getUsername().equals(username)) {
+                return true;
             }
         }
 
+        return false;
     }
 }
