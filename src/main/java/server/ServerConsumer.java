@@ -262,6 +262,7 @@ public class ServerConsumer extends Thread{
                             break;
                         }
 
+
                         targetClient.addIncomingFriendRequest(senderData.getUsername());
                         // Send Confirmation to sender
                         Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "Friend Request sent to: " + username);
