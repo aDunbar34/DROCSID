@@ -188,7 +188,7 @@ public class ClientProducer implements Runnable {
         try {
             out.println(objectMapper.writeValueAsString(toServer));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            System.out.print("Error: Showing friend list could not be parsed")
         }
     }
 
@@ -390,7 +390,7 @@ public class ClientProducer implements Runnable {
         try {
             out.println(objectMapper.writeValueAsString(toServer)); //send message to server
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            System.out.println("Error: Showing online members could not be parsed")
         }
 
         return;
