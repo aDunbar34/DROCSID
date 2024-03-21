@@ -264,6 +264,10 @@ public class ServerConsumer extends Thread{
 
 
                         targetClient.addIncomingFriendRequest(senderData.getUsername());
+
+                        //Add to history
+                        History.sendFriendRequest(senderData.getUsername(), targetClient.getUsername());
+
                         // Send Confirmation to sender
                         Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "Friend Request sent to: " + username);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
@@ -311,6 +315,9 @@ public class ServerConsumer extends Thread{
 
                         friend_list.add(targetClient.getUsername());
                         sender_friend_list.add(senderData.getUsername());
+
+                        // Add to history
+                        History.acceptFriendRequest(targetClient.getUsername(), senderData.getUsername());
 
                         Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "This User has been added to your Friends List: " + username);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
