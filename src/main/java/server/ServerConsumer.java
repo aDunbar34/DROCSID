@@ -237,31 +237,10 @@ public class ServerConsumer extends Thread{
 
                     case SEND_FRIEND_REQUEST -> {
                         String username = new String(message.getPayload());
-                        ClientData targetClient = null;
-                        System.out.println(username);
 
-                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
-
-                        boolean userExist = false;
-
-                        synchronized (clientsInServer) {
-                            for (ClientData clientData: clientsInServer) {
-                                if (clientData.getUsername().equals(username)) {
-                                    userExist = true;
-                                    targetClient = clientData;
-                                    break;
-                                }
-                            }
-                        }
-
-                        //Break as we cant do anything here as user doesn't exist
-                        if(!userExist){
-                            Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "User: "+ username + " doesn't exist!");
-                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
-                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
-                            break;
-                        }
-
+                        // Create user in history if they don't exist already and declare them as the target client
+                        History.createUser(username);
+                        ClientData targetClient = History.readUser(username);
 
                         targetClient.addIncomingFriendRequest(senderData.getUsername());
 

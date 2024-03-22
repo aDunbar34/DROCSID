@@ -143,8 +143,10 @@ public class ClientProducer implements Runnable {
 
         try{
             //Send message to add members to room
-            Message toServer = new Message(0, MessageType.ACCEPT_FRIEND, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
-            out.println(objectMapper.writeValueAsString(toServer));
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.ACCEPT_FRIEND, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
         } catch (JsonProcessingException e) {
             System.out.println("Error: Friend Request could not be parsed");
         }
@@ -171,8 +173,11 @@ public class ClientProducer implements Runnable {
         //should error on server if user not in room
         try{
             //Send message to add members to room
-            Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
-            out.println(objectMapper.writeValueAsString(toServer));
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+
         } catch (JsonProcessingException e) {
             System.out.println("Error: Friend Request could not be parsed");
         }
@@ -184,9 +189,12 @@ public class ClientProducer implements Runnable {
      * @author Adam Dunbar
      */
     private void showFriends() {
-        Message toServer = new Message(0, MessageType.FRIENDS_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
         try {
-            out.println(objectMapper.writeValueAsString(toServer));
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.FRIENDS_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+
         } catch (JsonProcessingException e) {
             System.out.print("Error: Showing friend list could not be parsed");
         }
@@ -327,9 +335,11 @@ public class ClientProducer implements Runnable {
     }
 
     private void viewFriendRequests() {
-        Message toServer = new Message(0, MessageType.FRIEND_REQUEST_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
         try {
-            out.println(objectMapper.writeValueAsString(toServer));
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.FRIEND_REQUEST_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -386,9 +396,11 @@ public class ClientProducer implements Runnable {
      * @author Adam Dunbar
      */
     public void showOnline() {
-        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
         try {
-            out.println(objectMapper.writeValueAsString(toServer)); //send message to server
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
+                out.println(objectMapper.writeValueAsString(toServer)); //send message to server
+            }
         } catch (JsonProcessingException e) {
             System.out.println("Error: Showing online members could not be parsed");
         }
