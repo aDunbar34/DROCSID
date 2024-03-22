@@ -106,6 +106,7 @@ public class ClientProducer implements Runnable {
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\accept" -> handleAcceptRequest(commandArgs);
                 case "\\startHistoryTest" -> startHistoryTest(commandArgs);
+                case "\\startMultiRoomTest" -> startMultiRoomTest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -584,14 +585,12 @@ public class ClientProducer implements Runnable {
      * @author Robbie Booth
      */
     private void sendTextMessage(String userInput) {
-        synchronized (chatRoomData) {
             Message message_to_send = new Message(0, MessageType.TEXT, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), userInput);//make message
             try {
                 out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
             } catch (JsonProcessingException e) {
                 System.out.println("Error sending message...");
             }
-        }
     }
 
     private void startHistoryTest(String args[]){
@@ -630,28 +629,20 @@ public class ClientProducer implements Runnable {
 
     }
 
-    private void createRoomForHistoryTest(String[] args, String username) {
-        // Check for incorrect number of arguments
-        if (args.length < 2) {
-            System.out.println("Incorrect number of arguments");
-            System.out.println("USAGE: \\create <roomName> <member>");
-            return;
-        }
-
-        // Get room name
-        String roomName = args[1];
-        HashSet<String> members = new HashSet<>();
-        for (int i = 2; i < args.length; i++) {
-            members.add(args[i]);
-        }
-        members.add(username);//add in the user connected if not already added by themselves
-
-        try{
-            //Send message to create room
-            Message joinRoomMessage = new Message(0, MessageType.CREATE_ROOM, username, roomName, System.currentTimeMillis(), objectMapper.writeValueAsString(members.toArray()));
-            out.println(objectMapper.writeValueAsString(joinRoomMessage));
-        } catch (JsonProcessingException e) {
-            System.out.println("Error: create room could not be parsed");
+    private void startMultiRoomTest(String args[]){
+        //\startMultiRoomTest multi
+        String room = args[1];
+        try {
+            while (true) {
+                joinRoom(args);
+                Thread.sleep(2);
+                sendTextMessage("im in room: " + room);
+                Thread.sleep(2);
+                exitRoom();
+                Thread.sleep(2);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

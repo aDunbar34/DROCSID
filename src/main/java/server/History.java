@@ -29,7 +29,7 @@ public class History {
     private static final Path usersPathDir = Paths.get("users");
 
     private static final String roomMessageFileName = "roomMessages.json";
-    private static final int maxHistorySize = 100;
+    private static final int maxHistorySize = 10;
     private static final String roomDataFileName = "roomData.json";
 
 

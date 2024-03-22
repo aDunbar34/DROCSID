@@ -40,7 +40,7 @@ public class ClientConsumer implements Runnable {
     public void run() {
         try {
             InputStream inputStream = socket.getInputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[2048];
             int bytesRead;
 
             System.out.println("Waiting for input");
@@ -48,7 +48,9 @@ public class ClientConsumer implements Runnable {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 Message messageParsed;
                 try{
+
                     String receivedData = new String(buffer, 0, bytesRead);
+                    System.out.println(receivedData);
                     messageParsed = objectMapper.readValue(receivedData, Message.class);
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
@@ -156,10 +158,8 @@ public class ClientConsumer implements Runnable {
             return;
         }
 
-        synchronized (chatRoomData){
-            String newRoom = messageParsed.getTargetId();
-            chatRoomData.setChatRoomId(newRoom);
-        }
+        String newRoom = messageParsed.getTargetId();
+        chatRoomData.setChatRoomId(newRoom);
 
         if(messageParsed.getTargetId() == null){
             System.out.println("Room successfully left!");
