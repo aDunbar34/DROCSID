@@ -29,7 +29,7 @@ public class History {
     private static final Path usersPathDir = Paths.get("users");
 
     private static final String roomMessageFileName = "roomMessages.json";
-    private static final int maxHistorySize = 10;
+    private static final int maxHistorySize = 100;
     private static final String roomDataFileName = "roomData.json";
 
 
@@ -400,8 +400,9 @@ public class History {
             fileWriter = new RandomAccessFile(file, "rw");
             channel = fileWriter.getChannel();
 
-            // Acquire an exclusive lock on the file
-            lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+            //Remove lock so we can see document getting overwritten when it shouldn't be
+//            // Acquire an exclusive lock on the file
+//            lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
 
             // Set the file pointer to the beginning of the file to overwrite its content
             fileWriter.seek(0);
@@ -446,8 +447,9 @@ public class History {
             fileReader = new RandomAccessFile(file, "r");
             channel = fileReader.getChannel();
 
-            // Acquire an exclusive lock on the file
-            lock = channel.lock(0, Long.MAX_VALUE, true);//We acquire a shared lock to read the document data
+            //Remove lock to show problems for testing
+//            // Acquire an exclusive lock on the file
+//            lock = channel.lock(0, Long.MAX_VALUE, true);//We acquire a shared lock to read the document data
 
             // Move the file pointer to the beginning of the file
             fileReader.seek(0);
@@ -651,7 +653,7 @@ public class History {
             channel = fileWriter.getChannel();
 
             // Acquire an exclusive lock on the file
-            lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+            //lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
 
             // Read the content:
             // Set the file pointer to the beginning of the file to overwrite its content
@@ -737,7 +739,8 @@ public class History {
             fileWriter = new RandomAccessFile(roomMessagesFile, "rw");
             channel = fileWriter.getChannel();
 
-            lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+            //remove lock so we can show error for history
+            //lock = channel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
 
             // Read the content:
             // Set the file pointer to the beginning of the file to overwrite its content

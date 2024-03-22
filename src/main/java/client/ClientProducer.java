@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
-import server.NonBlockingServerProducer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,10 +14,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.*;
 
 /**
@@ -108,6 +105,7 @@ public class ClientProducer implements Runnable {
                 case "\\friends" -> showFriends();
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\accept" -> handleAcceptRequest(commandArgs);
+                case "\\startHistoryTest" -> startHistoryTest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -591,8 +589,69 @@ public class ClientProducer implements Runnable {
             try {
                 out.println(objectMapper.writeValueAsString(message_to_send));//send message to server
             } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                System.out.println("Error sending message...");
             }
+        }
+    }
+
+    private void startHistoryTest(String args[]){
+        boolean sendMessage = true;
+        boolean even = true;
+        System.out.println(args[1]);
+        if(args[1].equals("odd")){
+            even = false;
+        }
+        //\join history_test
+        //\startHistoryTest odd
+        //\startHistoryTest even
+        try{//send message each millisecond vice versa
+            Thread.sleep(5000);
+            while (true){
+                long time = System.currentTimeMillis();
+                if(time % 2 == 0){
+                    if(even && sendMessage){
+                        sendMessage = false;
+                        sendTextMessage(username);
+                    }else if(!even) {
+                        sendMessage = true;
+                    }
+                }else{
+                    if(!even && sendMessage){
+                        sendMessage = false;
+                        sendTextMessage(username);
+                    }else if(even){
+                        sendMessage = true;
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void createRoomForHistoryTest(String[] args, String username) {
+        // Check for incorrect number of arguments
+        if (args.length < 2) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\create <roomName> <member>");
+            return;
+        }
+
+        // Get room name
+        String roomName = args[1];
+        HashSet<String> members = new HashSet<>();
+        for (int i = 2; i < args.length; i++) {
+            members.add(args[i]);
+        }
+        members.add(username);//add in the user connected if not already added by themselves
+
+        try{
+            //Send message to create room
+            Message joinRoomMessage = new Message(0, MessageType.CREATE_ROOM, username, roomName, System.currentTimeMillis(), objectMapper.writeValueAsString(members.toArray()));
+            out.println(objectMapper.writeValueAsString(joinRoomMessage));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: create room could not be parsed");
         }
     }
 
