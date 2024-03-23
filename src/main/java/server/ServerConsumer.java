@@ -1,6 +1,7 @@
 package server;
 
 import client.ClientData;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
@@ -214,6 +215,7 @@ public class ServerConsumer extends Thread{
                         //ADD rooms to each user in storage
                     }
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
+                    case STREAM_SIGNAL -> handleStreamSignal(message);
                     //eventually add a create room
 
                     default -> {
@@ -226,6 +228,26 @@ public class ServerConsumer extends Thread{
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    /**
+     * Handles stream signal messages
+     *
+     * @param message the message
+     */
+    private void handleStreamSignal(Message message) throws IOException {
+
+        // Search for recipient
+        ClientData senderData = nonBlockingServer.getClientData(message.getSenderId());
+        String recipientUsername = message.getTextMessage();
+        List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(senderData.getCurrentRoom());
+        for (ClientData client : clientsInRoom) {
+            if (client.getUsername().equals(recipientUsername)) {
+                // Relay message when found
+                nonBlockingServer.writeDataToClient(client.getUserChannel(), objectMapper.writeValueAsBytes(message));
+            }
+        }
+
     }
 
 

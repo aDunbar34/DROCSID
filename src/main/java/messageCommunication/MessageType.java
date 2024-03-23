@@ -22,7 +22,9 @@ public enum MessageType {
 
     FILE_SEND_SIGNAL,
     FILE_RECEIVE_SIGNAL,
-    FILE_LISTEN_SIGNAL;
+    FILE_LISTEN_SIGNAL,
+
+    STREAM_SIGNAL;
 
 
 

@@ -126,6 +126,11 @@ public class ClientProducer implements Runnable {
         }
     }
 
+    /**
+     * Sends a stream signal and runs the streaming webapp
+     *
+     * @param args the args the command was called with
+     */
     private void stream(String[] args) {
 
         if (args.length != 2) {
@@ -135,6 +140,16 @@ public class ClientProducer implements Runnable {
         }
 
         String recipient = args[1];
+
+        System.out.println("Beginning attempt to stream to peer <" + recipient + ">");
+
+        // Send stream signal to recipient
+        Message streamSignal = new Message(0, MessageType.STREAM_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), recipient);
+        try {
+            out.println(objectMapper.writeValueAsString(streamSignal));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
 
         try {
             Desktop.getDesktop().browse(new URI("http://localhost:8080?initiator," + socket.getInetAddress().getHostAddress() + "," + username + "," + recipient));
@@ -333,6 +348,8 @@ public class ClientProducer implements Runnable {
     /**
      * Prints a list of files in the drocsidFiles directory.
      * If no such directory exists, it creates it.
+     *
+     * @author Euan Gilmour
      */
     private void showFiles() {
 

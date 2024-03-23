@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import customExceptions.InvalidMessageException;
 import messageCommunication.Message;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Listens to the servers socket {@link #socket} and outputs the appropriate message to the users terminal if message received
@@ -58,10 +61,32 @@ public class ClientConsumer implements Runnable {
                     case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                     case ONLINE_STATUSES -> handleOnlineStatuses(messageParsed);
+                    case STREAM_SIGNAL -> handleStreamSignal(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sets up web app for streaming
+     *
+     * @param message the message
+     *
+     * @author Euan Gilmour
+     */
+    private void handleStreamSignal(Message message) {
+
+        String username = message.getTextMessage();
+        String initiator = message.getSenderId();
+
+        System.out.println("User <" + initiator + "> is trying to stream to you");
+
+        try {
+            Desktop.getDesktop().browse(new URI("http://localhost:8080?recipient," + socket.getInetAddress().getHostAddress() + "," + username + "," + initiator));
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
         }
     }
 
