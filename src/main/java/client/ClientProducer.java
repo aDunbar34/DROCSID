@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
 import server.NonBlockingServerProducer;
-
+import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -106,6 +108,7 @@ public class ClientProducer implements Runnable {
                 case "\\add" -> addMembersToRoom(commandArgs);
                 case "\\exit" -> exitRoom();
                 case "\\online" -> showOnline();
+                case "\\stream" -> stream(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -120,6 +123,23 @@ public class ClientProducer implements Runnable {
                     sendTextMessage(userInput);
                 }
             }
+        }
+    }
+
+    private void stream(String[] args) {
+
+        if (args.length != 2) {
+            System.out.println("Inccorect number of arguments.");
+            System.out.println("USAGE: \\stream <recipientUsername>");
+            return;
+        }
+
+        String recipient = args[1];
+
+        try {
+            Desktop.getDesktop().browse(new URI("http://localhost:8080?initiator," + socket.getInetAddress().getHostAddress() + "," + username + "," + recipient));
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
         }
     }
 

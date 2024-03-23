@@ -31,6 +31,9 @@ public class Client {
                     """);
         System.out.println("You are now experiencing DROCSID");
 
+        // Set up web server
+        ClientWebServer clientWebServer = new ClientWebServer();
+        clientWebServer.startServer();
 
         String hostname = args[0];//ip address of server or localhost
         int portNo = Integer.parseInt(args[1]);
