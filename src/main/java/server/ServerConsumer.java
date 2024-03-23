@@ -1,5 +1,6 @@
 package server;
 
+import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
@@ -63,15 +64,63 @@ public class ServerConsumer extends Thread{
                         }
                     }
 
+                    case FRIEND_REQUEST_LIST -> {
+                        String friendRequestListDisplay = "";
+                        Set<String> friend_request_list = senderData.getIncomingFriendRequests();
+
+                        if (!friend_request_list.isEmpty()) {
+                            friendRequestListDisplay = "Requests: \n";
+                            synchronized (friend_request_list) {
+                                for (String request: friend_request_list) {
+                                    friendRequestListDisplay += "- Request from: " + request;
+                                }
+                            }
+                        } else {
+                            friendRequestListDisplay = "No Friend Requests";
+                        }
+                        Message clientMessage = new Message(0, MessageType.FRIEND_REQUEST_LIST , senderData.getUsername(), null, System.currentTimeMillis(), friendRequestListDisplay);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                    }
+                    case FRIENDS_LIST -> {
+                        // Uncomment for Testing
+//                         Set<String> templist = new HashSet<String>();
+//                         templist.add("tester");
+//                         senderData.setFriends(templist);
+
+                        String onlineStatus = "offline";
+                        String friendListDisplay = "";
+
+                        Set<String> friend_list = senderData.getFriends();
+                        if (!friend_list.isEmpty()) {
+                            friendListDisplay = "Friends: \n";
+                            synchronized (friend_list) {
+                                for (String friend: friend_list) {
+                                    if (userOnlineCheck(friend)) {
+                                        onlineStatus = "Online";
+                                    } else {
+                                        onlineStatus = "Offline";
+                                    }
+                                    friendListDisplay += "- " + friend + " (" + onlineStatus + ")" + "\n";
+                                }
+                            }
+                        } else {
+                            friendListDisplay = "No friends yet";
+                        }
+                        Message clientMessage = new Message(0, MessageType.FRIENDS_LIST , senderData.getUsername(), null, System.currentTimeMillis(), friendListDisplay);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(clientMessage);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                    }
+
                     case ONLINE_STATUSES -> {
                         String onlineStatuses = "";
                         if (senderData.getCurrentRoom() != null) {
                             String currentRoom = senderData.getCurrentRoom(); //out of sync problem potentially here
                             List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
-
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Room: \n";
                             synchronized (clientsInRoom) {
-                                // Create the message to display as response
-                                onlineStatuses = "Users in Room: \n";
                                 for (ClientData clientInRoom: clientsInRoom) {
                                     onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
                                 }
@@ -80,9 +129,9 @@ public class ServerConsumer extends Thread{
                         } else if (senderData.getCurrentRoom() == null) {
                             Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
 
+                            // Create the message to display as response
+                            onlineStatuses = "Users in Server: \n";
                             synchronized (clientsInServer) {
-                                // Create the message to display as response
-                                onlineStatuses = "Users in Server: \n";
                                 for (ClientData clientInServer: clientsInServer) {
                                     onlineStatuses += "- " + clientInServer.getUsername() + "\n";
                                 }
@@ -185,6 +234,75 @@ public class ServerConsumer extends Thread{
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                     }
+
+                    case SEND_FRIEND_REQUEST -> {
+                        String username = new String(message.getPayload());
+
+                        // Create user in history if they don't exist already and declare them as the target client
+                        History.createUser(username);
+                        ClientData targetClient = History.readUser(username);
+
+                        targetClient.addIncomingFriendRequest(senderData.getUsername());
+
+                        //Add to history
+                        History.sendFriendRequest(senderData.getUsername(), targetClient.getUsername());
+
+                        // Send Confirmation to sender
+                        Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "Friend Request sent to: " + username);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                    }
+
+                    case ACCEPT_FRIEND -> {
+                        String username = new String(message.getPayload());
+                        ClientData targetClient = null;
+                        Set<String> friend_list = senderData.getFriends();
+                        Set<String> request_list = senderData.getIncomingFriendRequests();
+                        ClientData clientInRoom;
+
+                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                        boolean requestExists = false;
+
+                        synchronized (clientsInServer) {
+                            for (ClientData clientData: clientsInServer) {
+                                if (clientData.getUsername().equals(username)) {
+                                    targetClient = clientData;
+                                    break;
+                                }
+                            }
+                        }
+
+                        synchronized (request_list) {
+                            for (String request : request_list) {
+                                if (username.equals(request)){
+                                    requestExists = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if(!requestExists){
+                            Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "Request: "+ username + " doesn't exist!");
+                            byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                            break;
+                        }
+
+                        Set<String> sender_friend_list = targetClient.getFriends();
+
+                        friend_list.add(targetClient.getUsername());
+                        sender_friend_list.add(senderData.getUsername());
+
+                        // Add to history
+                        History.acceptFriendRequest(targetClient.getUsername(), senderData.getUsername());
+
+                        Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "This User has been added to your Friends List: " + username);
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                    }
+
                     case ADD_MEMBERS -> {
                         String[] usernames = objectMapper.readValue(message.getPayload(), String[].class);
                         Set<String> allRooms = nonBlockingServer.getAllRooms();
@@ -238,6 +356,7 @@ public class ServerConsumer extends Thread{
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                         //ADD rooms to each user in storage
                     }
+
                     case FILE_SEND_SIGNAL -> handleFileSendSignal(message);
                     //eventually add a create room
 
@@ -291,9 +410,19 @@ public class ServerConsumer extends Thread{
                 Message fileReceiveSignal = new Message(0, MessageType.FILE_RECEIVE_SIGNAL, message.getSenderId(), senderData.getCurrentRoom(), System.currentTimeMillis(), payload);
                 byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(fileReceiveSignal);
                 nonBlockingServer.writeDataToClient(client.getUserChannel(), messageAsByteJSON);
+            }
+        }
+    }
 
+    public boolean userOnlineCheck(String username) {
+        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+        for (ClientData clientInServer: clientsInServer) {
+            if (clientInServer.getUsername().equals(username)) {
+                return true;
             }
         }
 
+        return false;
     }
 }

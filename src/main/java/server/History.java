@@ -1,5 +1,6 @@
 package server;
 
+import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import messageCommunication.UserMessage;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
@@ -30,6 +32,45 @@ public class History {
     private static final int maxHistorySize = 10;
     private static final String roomDataFileName = "roomData.json";
 
+
+    /**
+     * Returns a json user based on the parameters given
+     * @param username
+     * @param rooms
+     * @param friends
+     * @param outgoingFriendRequests
+     * @param incomingFriendRequests
+     * @return json user based on the parameters given
+     * @author Robbie Booth
+     */
+    private static String getUserString(String username, String rooms, String friends, String outgoingFriendRequests, String incomingFriendRequests) {
+        String changedContent = "{ \"username\": \""+ username +"\", \"rooms\": "+rooms+" , \"friends\": "+friends+" , \"outgoingFriendRequests\": "+outgoingFriendRequests+" , \"incomingFriendRequests\": "+incomingFriendRequests+" }";
+        return changedContent;
+    }
+
+    /**
+     * Returns the json which is stored in history of the clientData. If error then default user is returned.
+     * @param clientData
+     * @return json of the clientData. If error then default user is returned.
+     * @author Robbie Booth
+     */
+    private static String clientDataToString(ClientData clientData) {
+
+        String rooms = "[]";
+        String friends = "[]";
+        String outgoingFriendRequests = "[]";
+        String incomingFriendRequests = "[]";
+        try {
+            rooms = objectMapper.writeValueAsString(clientData.getUserRooms());
+            friends = objectMapper.writeValueAsString(clientData.getFriends());
+            outgoingFriendRequests = objectMapper.writeValueAsString(clientData.getOutgoingFriendRequests());
+            incomingFriendRequests = objectMapper.writeValueAsString(clientData.getIncomingFriendRequests());
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return getUserString(clientData.getUsername(), rooms, friends, outgoingFriendRequests, incomingFriendRequests);
+    }
 
     /**
      * If room exists returns array of messages, else returns empty array
@@ -90,6 +131,223 @@ public class History {
         }
 
         return rooms;
+    }
+
+    /**
+     * Reads the username specified user file if it exists returns the {@link ClientData} else returns null
+     * @param username username to be read
+     * @return {@link ClientData} if the user exists else it returns null
+     * @author Robbie Booth
+     */
+    public static ClientData readUser(String username) throws IOException {
+        File file = new File(usersPathDir.toFile(), username+".json");
+        if(!file.exists()){
+            return null;
+        }
+
+        String jsonString = readFileContents(file);
+        return getClientData(username, jsonString);
+    }
+
+    /**
+     * Refactor of code to get the client data of a json string. Throws Json processing error.
+     * @param username
+     * @param jsonString
+     * @return
+     */
+    private static ClientData getClientData(String username, String jsonString) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        JsonNode jsonNode = objectMapper.readTree(jsonString);
+        Set<String> roomsSet = convertNodeToSet(jsonNode.get("rooms"));
+        Set<String> outgoingFriendRequestsSet = convertNodeToSet(jsonNode.get("outgoingFriendRequests"));
+        Set<String> incomingFriendRequestsSet = convertNodeToSet(jsonNode.get("incomingFriendRequests"));
+        Set<String> friendsSet = convertNodeToSet(jsonNode.get("friends"));
+        return new ClientData(username, roomsSet, incomingFriendRequestsSet, outgoingFriendRequestsSet, friendsSet);
+    }
+
+    /**
+     * Takes a json node and if its an array it loops through the object and returns a set. If the node is null, an empty set is returned.
+     * @param node node to be converted into a set. If the node is null, an empty set is returned.
+     * @return a set of the values of the node. If the node is null, an empty set is returned.
+     * @author Robbie Booth
+     */
+    private static Set<String> convertNodeToSet(JsonNode node){
+        Set<String> set = new HashSet<>();
+        if(node == null || node.isNull()){
+            return set;
+        }
+
+        if (node.isArray()) {
+            for (JsonNode textNode : node) {
+                set.add(textNode.asText());
+            }
+        }
+        return set;
+    }
+
+    /**
+     * Accepts the friend request that the requester sent to the receiver becoming friends. If either the requester
+     * or receiver file doesn't exist, it is created.
+     * @param requester Person who sent the friend request
+     * @param receiver Person who accepted the friend request
+     * @author Robbie Booth
+     */
+    public static void acceptFriendRequest(String requester, String receiver) throws IOException {
+        updateUserFriends(requester, receiver, HistoryFriendType.ACCEPT);
+    }
+
+    /**
+     * Adds the friend request to the requesters outgoing and receivers incoming files. If either the requester
+     * or receiver file doesn't exist, it is created.
+     * @param requester Person who sent the friend request
+     * @param receiver Person who received the friend request
+     * @author Robbie Booth
+     */
+    public static void sendFriendRequest(String requester, String receiver) throws IOException {
+        updateUserFriends(requester, receiver, HistoryFriendType.SEND);
+    }
+
+    /**
+     * Refactored. Locks the requesters file and the receivers file and does the history type operation on them. If the file does not exist it is created.
+     * @param requester person who made the friend request
+     * @param receiver person who received the friend request
+     * @param type the type of the friend request either send or accept
+     * @throws IOException
+     * @author Robbie Booth
+     */
+    private static void updateUserFriends(String requester, String receiver, HistoryFriendType type) throws IOException{
+        //create user path directory if it does not exist
+        History.checkPathElseCreate(usersPathDir);
+
+        File requesterFile = new File(usersPathDir.toFile(), requester+".json");
+        File receiverFile = new File(usersPathDir.toFile(), receiver+".json");
+
+        RandomAccessFile requesterWriter = null;
+        FileChannel requesterChannel = null;
+        FileLock requesterLock = null;
+
+        RandomAccessFile receiverWriter = null;
+        FileChannel receiverChannel = null;
+        FileLock receiverLock = null;
+
+        //User stuff:
+
+        try {
+            // Open the file in read-write mode
+            requesterWriter = new RandomAccessFile(requesterFile, "rw");
+            requesterChannel = requesterWriter.getChannel();
+
+            receiverWriter = new RandomAccessFile(receiverFile, "rw");
+            receiverChannel = receiverWriter.getChannel();
+
+            //Lock both requester and receiver channel
+            requesterLock = requesterChannel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+            receiverLock = receiverChannel.lock(0, Long.MAX_VALUE, false);//We acquire an exclusive lock to write to the document
+
+            // Read the content of requester:
+            // Set the file pointer to the beginning of the file to overwrite its content
+            requesterWriter.seek(0);
+            long fileLength = requesterWriter.length();
+            byte[] content = new byte[(int) fileLength];
+            requesterWriter.readFully(content);
+            // Convert the byte array to a String
+            String requesterJsonString = new String(content);
+            ClientData requesterClientData = getClientData(requester,requesterJsonString);
+
+
+            // Read the content of receiver:
+            // Set the file pointer to the beginning of the file to overwrite its content
+            receiverWriter.seek(0);
+            fileLength = receiverWriter.length();
+            content = new byte[(int) fileLength];
+            receiverWriter.readFully(content);
+            // Convert the byte array to a String
+            String receiverJsonString = new String(content);
+            ClientData receiverClientData = getClientData(receiver,receiverJsonString);
+
+
+            //If they are already friends don't add the request
+            if(receiverClientData.getFriends().contains(requester) && requesterClientData.getFriends().contains(receiver)){
+                return;
+            }
+
+            if(type.equals(HistoryFriendType.SEND)){//sending a request
+                //If the receiver has an outgoing request to the requester then accept - as they both want to be friends:
+                if(receiverClientData.getOutgoingFriendRequests().contains(requester) || requesterClientData.getIncomingFriendRequests().contains(receiver)){
+                    //accept
+                    acceptFriendRequest(receiverClientData, requesterClientData);
+                }else{
+                    //add outgoing requesters and incoming receivers
+                    requesterClientData.getOutgoingFriendRequests().add(receiver);
+                    receiverClientData.getIncomingFriendRequests().add(requester);
+                }
+            }else if(type.equals(HistoryFriendType.ACCEPT)){//accepting a request
+
+                if(!receiverClientData.getIncomingFriendRequests().contains(requester)){
+                    System.out.println("Receiver: "+receiver +" has no incoming friend requests in history for requester: "+requester+"!");
+                }else if(!requesterClientData.getOutgoingFriendRequests().contains(receiver)){
+                    System.out.println("Requester: "+requester +" has no outgoing friend requests in history for reciever: "+receiver+"!");
+                }else{
+                    //accept if request is actually there:
+                    acceptFriendRequest(receiverClientData, requesterClientData);
+                }
+            }
+
+            //write to both files
+            receiverWriter.seek(0);
+            receiverWriter.setLength(0);
+            receiverWriter.writeBytes(clientDataToString(receiverClientData));
+
+            requesterWriter.seek(0);
+            requesterWriter.setLength(0);
+            requesterWriter.writeBytes(clientDataToString(requesterClientData));
+
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }finally {
+            //release locks
+            if(requesterLock != null){
+                requesterLock.release();
+            }
+            if(receiverLock != null){
+                receiverLock.release();
+            }
+
+
+            if(requesterChannel != null){
+                requesterChannel.close();
+            }
+            if(requesterWriter != null){
+                requesterWriter.close();
+            }
+
+
+            if(receiverChannel != null){
+                receiverChannel.close();
+            }
+            if(receiverWriter != null){
+                receiverWriter.close();
+            }
+        }
+    }
+
+    /**
+     * Refactored to become friends of requester and receiver.
+     * @param receiverClientData
+     * @param requesterClientData
+     */
+    private static void acceptFriendRequest(ClientData receiverClientData, ClientData requesterClientData) {
+        receiverClientData.getIncomingFriendRequests().remove(requesterClientData.getUsername());
+        requesterClientData.getIncomingFriendRequests().remove(receiverClientData.getUsername());
+
+        receiverClientData.getOutgoingFriendRequests().remove(requesterClientData.getUsername());
+        requesterClientData.getOutgoingFriendRequests().remove(receiverClientData.getUsername());
+
+        receiverClientData.getFriends().add(requesterClientData.getUsername());
+        requesterClientData.getFriends().add(receiverClientData.getUsername());
     }
 
     /**
@@ -273,7 +531,7 @@ public class History {
             return;
         }
 
-        String jsonContent = "{ \"username\": \""+username+"\", \"rooms\": [] }";
+        String jsonContent = getUserString(username, "[]","[]","[]","[]");
         createOrOverrideFile(file, jsonContent);
     }
 
@@ -369,6 +627,8 @@ public class History {
         }
     }
 
+
+
     /**
      * Adds the roomName given to the users rooms. If the user does not exist they are created with that room name.
      * DO NOT USE FOR UPDATING ROOMS THAT USER BELONGS TO: USE {@link #addUsersToRoom(String, List)} INSTEAD!
@@ -425,8 +685,9 @@ public class History {
                     e.printStackTrace();
                 }
             }else{
-                String rooms = objectMapper.writeValueAsString(usersRooms);
-                changedContent = "{ \"username\": \""+username+"\", \"rooms\": "+rooms+" }";
+                //no json string problem
+                String usersRoomsString = objectMapper.writeValueAsString(usersRooms);
+                changedContent = getUserString(username, usersRoomsString, "[]", "[]", "[]");
             }
             if(changedContent != null){
                 //write new history to file

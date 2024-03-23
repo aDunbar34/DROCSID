@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Initialises the connection with the server sets the room and then any messages that the client sends will be sent to
@@ -106,6 +105,9 @@ public class ClientProducer implements Runnable {
                 case "\\add" -> addMembersToRoom(commandArgs);
                 case "\\exit" -> exitRoom();
                 case "\\online" -> showOnline();
+                case "\\friends" -> showFriends();
+                case "\\sendRequest" -> handleSendRequests(commandArgs);
+                case "\\accept" -> handleAcceptRequest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -120,6 +122,81 @@ public class ClientProducer implements Runnable {
                     sendTextMessage(userInput);
                 }
             }
+        }
+    }
+
+    /**
+     * Accepts a friend request from another user
+     *
+     * @param args The input command \accept <Username>
+     * @author Lewis Brogan
+     */
+
+    private void handleAcceptRequest(String[] args) {
+        if (args.length <= 1) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\accept <member>");
+            return;
+        }
+
+        String potentialFriend = args[1];
+
+        try{
+            //Send message to add members to room
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.ACCEPT_FRIEND, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Friend Request could not be parsed");
+        }
+    }
+
+
+    /**
+     * Sends a Friend Request to the input user
+     *
+     * @param args The input command \sendRequest <Username>
+     * @author Adam Dunbar
+     */
+
+    private void handleSendRequests(String[] args) {
+        // Check for incorrect number of arguments
+        if (args.length <= 1) {
+            System.out.println("Incorrect number of arguments");
+            System.out.println("USAGE: \\sendRequest <member>");
+            return;
+        }
+        // Get name of user to be sent request
+        String potentialFriend = args[1];
+
+        //should error on server if user not in room
+        try{
+            //Send message to add members to room
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Friend Request could not be parsed");
+        }
+    }
+
+    /**
+     * Displays a list of the all users in the Clients friend list
+     *
+     * @author Adam Dunbar
+     */
+    private void showFriends() {
+        try {
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.FRIENDS_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+
+        } catch (JsonProcessingException e) {
+            System.out.print("Error: Showing friend list could not be parsed");
         }
     }
 
@@ -240,6 +317,12 @@ public class ClientProducer implements Runnable {
                     System.out.println("E.g: for adding two users \\add TheCrew fred scooby");
                 }
                 case 4 ->{
+                    System.out.println("You've selected to view your friend requests");
+                    viewFriendRequests();
+                    System.out.println("To send a Friend Request do \\sendRequest <Username>");
+                    System.out.println("To Accept a Friend Request do \\accept <Username>");
+                }
+                case 5 ->{
                     System.out.println("You've selected disconnect");
                     System.out.println("NOT IMPLEMENTED YET");//TODO implement
                     //disconnect
@@ -251,6 +334,18 @@ public class ClientProducer implements Runnable {
         }
     }
 
+    private void viewFriendRequests() {
+        try {
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.FRIEND_REQUEST_LIST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+                out.println(objectMapper.writeValueAsString(toServer));
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     /**
      * Terrible way of doing it but displays the possible options on home page
      *
@@ -261,7 +356,8 @@ public class ClientProducer implements Runnable {
         System.out.println("1. Join existing room");
         System.out.println("2. Create room");
         System.out.println("3. Add user to room");
-        System.out.println("4. Disconnect");
+        System.out.println("4. View friend requests");
+        System.out.println("5. Disconnect");
         System.out.println("Enter number to select option:");
     }
 
@@ -300,11 +396,13 @@ public class ClientProducer implements Runnable {
      * @author Adam Dunbar
      */
     public void showOnline() {
-        Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
         try {
-            out.println(objectMapper.writeValueAsString(toServer));//send message to server
+            synchronized (chatRoomData) {
+                Message toServer = new Message(0, MessageType.ONLINE_STATUSES, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());//make message
+                out.println(objectMapper.writeValueAsString(toServer)); //send message to server
+            }
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            System.out.println("Error: Showing online members could not be parsed");
         }
 
         return;
