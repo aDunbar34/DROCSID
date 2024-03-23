@@ -5,6 +5,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
+import java.time.Duration;
+
 /**
  * A websocket server for use in signalling
  * for WebRTC connections
@@ -17,15 +19,14 @@ public class WebSocketsServer {
 
     public WebSocketsServer() {
         server = new Server(8081);
-        ServletContextHandler handler = new ServletContextHandler();
-        handler.setContextPath("/socket");
+        ServletContextHandler handler = new ServletContextHandler(server, "/socket");
+        server.setHandler(handler);
 
-        JettyWebSocketServletContainerInitializer.configure(handler, ((servletContext, container) -> {
+        JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) -> {
+            container.setIdleTimeout(Duration.ofMinutes(15L));
             container.addMapping("/", WebSocketServerEndpoint.class);
-        }));
-    }
+        });
 
-    public void startServer() {
         try {
             server.start();
             System.out.println("Successfully started WebSockets Server");

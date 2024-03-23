@@ -2,8 +2,6 @@ const configuration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
   ],
 };
 const connection = new RTCPeerConnection(configuration);
@@ -20,7 +18,9 @@ const serverAddress = args[1];
 const username = args[2];
 const recipient = args[3];
 
-const socket = new WebSocket(`ws://${serverAddress}:8081/socket`);
+let initiatorHeartbeatInterval;
+
+const socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
 window.addEventListener("unload", () => {
   socket.close();
 });
@@ -53,6 +53,7 @@ const sendHeartbeat = function () {
     type: "HEARTBEAT",
     name: recipient,
   };
+  socket.send(JSON.stringify(message));
 };
 
 const initiatorCheckHeartbeat = function () {

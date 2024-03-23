@@ -54,7 +54,6 @@ public class Server implements Runnable {
         int portNumber = Integer.parseInt(args[0]);
         Server server = new Server(portNumber);
         WebSocketsServer webSocketsServer = new WebSocketsServer();
-        webSocketsServer.startServer();
         Thread serverThread = new Thread(server);
         serverThread.run();
         while(serverThread.isAlive()){

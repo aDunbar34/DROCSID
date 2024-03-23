@@ -29,15 +29,15 @@ public class WebSocketServerEndpoint {
     }
 
     @OnWebSocketClose
-    public void onClose(Session session) {
+    public void onClose(Session session, int statusCode, String reason) {
         sessions.entrySet().removeIf(entry -> entry.getValue().equals(session));
         System.out.println("WEBSOCKETS: Connection closed from " + session.getRemoteAddress().toString());
     }
 
     @OnWebSocketError
-    public void onError(Throwable error) {
+    public void onError(Throwable cause) {
         System.out.println("WEBSOCKETS: ERROR");
-        error.printStackTrace();
+        cause.printStackTrace();
     }
 
     @OnWebSocketMessage
@@ -49,7 +49,7 @@ public class WebSocketServerEndpoint {
                 case "INTRODUCTION" -> {
                     String name = jsonMessage.get("name").asText();
                     sessions.put(name, session);
-                    System.out.println("Session " + session.getRemoteAddress().toString() + " introduced as '" + name + "'");
+                    System.out.println("WEBSOCKETS: Session " + session.getRemoteAddress().toString() + " introduced as '" + name + "'");
                 }
                 case "HEARTBEAT" -> {
                     String name = jsonMessage.get("name").asText();
@@ -58,7 +58,7 @@ public class WebSocketServerEndpoint {
                     response.put("name", name);
                     response.put("connected", sessions.containsKey(name));
                     session.getRemote().sendString(response.toString());
-                    System.out.println("Heartbeat message received from session " + session.getRemoteAddress().toString() + " about user " + name);
+                    System.out.println("WEBSOCKETS: Heartbeat message received from session " + session.getRemoteAddress().toString() + " about user " + name);
                 }
             }
         } catch (JsonProcessingException e) {
