@@ -26,7 +26,9 @@ public class WebSocketsServer {
             container.setIdleTimeout(Duration.ofMinutes(15L));
             container.addMapping("/", WebSocketServerEndpoint.class);
         });
+    }
 
+    public void startServer() {
         try {
             server.start();
             System.out.println("Successfully started WebSockets Server");
