@@ -36,8 +36,10 @@ socket.onmessage = (event) => {
   const response = JSON.parse(event.data);
   switch (response.type) {
     case "HEARTBEAT":
+      console.log("Heartbeat received");
+      console.log(response);
       if (response.name === peerUsername && response.connected === true) {
-        console.log("Heartbeat received");
+        console.log("Recipient is connected");
         clearInterval(initiatorHeartbeatInterval);
         sendOffer();
       }
@@ -72,6 +74,7 @@ const sendHeartbeat = function () {
     name: peerUsername,
   };
   socket.send(JSON.stringify(message));
+  console.log("Sent heartbeat");
 };
 
 const sendOffer = function () {
