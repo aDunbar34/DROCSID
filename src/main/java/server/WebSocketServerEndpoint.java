@@ -60,6 +60,24 @@ public class WebSocketServerEndpoint {
                     session.getRemote().sendString(response.toString());
                     System.out.println("WEBSOCKETS: Heartbeat message received from session " + session.getRemoteAddress().toString() + " about user " + name);
                 }
+                case "SDP" -> {
+                    String recipient = jsonMessage.get("recipient").asText();
+                    if (!sessions.containsKey(recipient)) {
+                        System.out.println("WEBSOCKETS: SDP message received for unconnected user '" + recipient + "'");
+                        return;
+                    }
+                    Session recipientSession = sessions.get(recipient);
+                    recipientSession.getRemote().sendString(message);
+                }
+                case "ICE" -> {
+                    String recipient = jsonMessage.get("recipient").asText();
+                    if (!sessions.containsKey(recipient)) {
+                        System.out.println("WEBSOCKETS: ICE message received for unconnected user '" + recipient + "'");
+                        return;
+                    }
+                    Session recipientSession = sessions.get(recipient);
+                    recipientSession.getRemote().sendString(message);
+                }
             }
         } catch (JsonProcessingException e) {
             System.out.println("WEBSOCKETS: Invalid JSON sent from session " + session.getRemoteAddress().toString());
