@@ -3,6 +3,7 @@ package server;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 import java.time.Duration;
@@ -23,6 +24,7 @@ public class WebSocketsServer {
         server.setHandler(handler);
 
         JettyWebSocketServletContainerInitializer.configure(handler, (servletContext, container) -> {
+            container.setIdleTimeout(Duration.ofMinutes(5));
             container.addMapping("/", WebSocketServerEndpoint.class);
         });
     }
