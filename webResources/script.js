@@ -16,7 +16,7 @@ if (args.length != 4) {
 const role = args[0];
 const serverAddress = args[1];
 const username = args[2];
-const recipient = args[3];
+const peerUsername = args[3];
 
 let initiatorHeartbeatInterval;
 
@@ -28,7 +28,7 @@ window.addEventListener("unload", () => {
 socket.onopen = (event) => {
   sendIntroduction();
   if (role === "initiator") {
-    initiatorCheckHeartbeat();
+    initiatorHeartbeatInterval = setInterval(() => sendHeartbeat(), 1000);
   }
 };
 
@@ -36,7 +36,25 @@ socket.onmessage = (event) => {
   const response = JSON.parse(event.data);
   switch (response.type) {
     case "HEARTBEAT":
-      console.log("Heartbeat received!");
+      if (response.name === peerUsername && response.connected === true) {
+        console.log("Heartbeat received");
+        clearInterval(initiatorHeartbeatInterval);
+        sendOffer();
+      }
+      break;
+    case "SDP":
+      const sdp = response.content;
+      connection.setRemoteDescription(sdp);
+      console.log("Received SDP");
+      if (role === "recipient") {
+        sendAnswer();
+      }
+      break;
+    case "ICE":
+      const candidate = response.content;
+      connection.addIceCandidate(candidate);
+      console.log("Received new ICE candidate");
+      break;
   }
 };
 
@@ -51,11 +69,60 @@ const sendIntroduction = function () {
 const sendHeartbeat = function () {
   const message = {
     type: "HEARTBEAT",
-    name: recipient,
+    name: peerUsername,
   };
   socket.send(JSON.stringify(message));
 };
 
-const initiatorCheckHeartbeat = function () {
-  sendHeartbeat();
+const sendOffer = function () {
+  connection
+    .createOffer()
+    .then((offer) => {
+      connection.setLocalDescription = offer;
+      const message = {
+        type: "SDP",
+        sender: username,
+        recipient: peerUsername,
+        content: offer,
+      };
+      socket.send(JSON.stringify(message));
+    })
+    .then(console.log("Sent offer"));
+};
+
+const sendAnswer = function () {
+  connection
+    .createAnswer()
+    .then((answer) => {
+      connection.setLocalDescription = answer;
+      const message = {
+        type: "SDP",
+        sender: username,
+        recipient: peerUsername,
+        content: answer,
+      };
+      socket.send(JSON.stringify(message));
+    })
+    .then(console.log("Sent answer"));
+};
+
+const sendICECandidate = function (candidate) {
+  const message = {
+    type: "ICE",
+    sender: username,
+    recipient: peerUsername,
+    content: candidate,
+  };
+  socket.send(JSON.stringify(message));
+  console.log("Sent ICE candidate");
+};
+
+connection.onopen = (event) => {
+  connectionStatus.innerText = "Connection established";
+};
+
+connection.onicecandidate = (event) => {
+  if (event.candidate !== "") {
+    sendICECandidate(event.candidate);
+  }
 };
