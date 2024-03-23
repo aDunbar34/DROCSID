@@ -81,7 +81,7 @@ const sendOffer = function () {
   connection
     .createOffer()
     .then((offer) => {
-      connection.setLocalDescription = offer;
+      connection.setLocalDescription(offer);
       const message = {
         type: "SDP",
         sender: username,
@@ -97,7 +97,7 @@ const sendAnswer = function () {
   connection
     .createAnswer()
     .then((answer) => {
-      connection.setLocalDescription = answer;
+      connection.setLocalDescription(answer);
       const message = {
         type: "SDP",
         sender: username,
