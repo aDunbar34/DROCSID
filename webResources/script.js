@@ -42,8 +42,11 @@ connection.oniceconnectionstatechange = (event) => {
 
 connection.onicecandidate = (event) => {
   console.log("Ice Candidate Event");
-  if (event.candidate !== "") {
+  if (event.candidate) {
     sendICECandidate(event.candidate);
+  } else if (event.candidate === null) {
+    console.log("ICE gathering finished.");
+    sendFinish();
   }
 };
 
@@ -56,6 +59,7 @@ connection.ontrack = (event) => {
 const socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
 window.addEventListener("unload", () => {
   socket.close();
+  connection.close();
 });
 
 socket.onopen = (event) => {
@@ -90,6 +94,11 @@ socket.onmessage = (event) => {
       connection.addIceCandidate(candidate);
       console.log("Received new ICE candidate");
       break;
+    case "FINISH":
+      if (response.sender === peerUsername) {
+        socket.close();
+        console.log("Finish received. Socket closed.");
+      }
   }
 };
 
@@ -151,4 +160,14 @@ const sendICECandidate = function (candidate) {
   };
   socket.send(JSON.stringify(message));
   console.log("Sent ICE candidate");
+};
+
+const sendFinish = function () {
+  const message = {
+    type: "FINISH",
+    sender: username,
+    recipient: peerUsername,
+  };
+  socket.send(JSON.stringify(message));
+  console.log("Sent finish");
 };

@@ -80,6 +80,16 @@ public class WebSocketServerEndpoint {
                     recipientSession.getRemote().sendString(message);
                     System.out.println("WEBSOCKETS: ICE message sent to user <" + recipient + ">");
                 }
+                case "FINISH" -> {
+                    String recipient = jsonMessage.get("recipient").asText();
+                    if (!sessions.containsKey(recipient)) {
+                        System.out.println("WEBSOCKETS: FINISH message received for unconnected user <" + recipient + ">");
+                        return;
+                    }
+                    Session recipientSession = sessions.get(recipient);
+                    recipientSession.getRemote().sendString(message);
+                    System.out.println("WEBSOCKETS: FINISH message sent to user <" + recipient + ">");
+                }
             }
         } catch (JsonProcessingException e) {
             System.out.println("WEBSOCKETS: Invalid JSON sent from session " + session.getRemoteAddress().toString());

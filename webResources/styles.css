@@ -8,4 +8,5 @@ body {
 #videos {
     display: flex;
     justify-content: space-between;
+    gap: 2vw;
 }
