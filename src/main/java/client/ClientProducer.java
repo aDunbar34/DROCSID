@@ -107,6 +107,8 @@ public class ClientProducer implements Runnable {
                 case "\\accept" -> handleAcceptRequest(commandArgs);
                 case "\\startHistoryTest" -> startHistoryTest(commandArgs);
                 case "\\startOnlineTest" -> startOnlineTest(commandArgs);
+                case "\\startSendTest" -> sendRequestsTest();
+                case "\\startAcceptTest" -> startAcceptTest();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -171,6 +173,16 @@ public class ClientProducer implements Runnable {
         try{
             //Send message to add members to room
             Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (JsonProcessingException e) {
+            System.out.println("Error: Friend Request could not be parsed");
+        }
+    }
+
+    private void sendRequestsTest(){
+        try{
+            //Send message to add members to room
+            Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST_TEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
             out.println(objectMapper.writeValueAsString(toServer));
         } catch (JsonProcessingException e) {
             System.out.println("Error: Friend Request could not be parsed");
@@ -652,6 +664,28 @@ public class ClientProducer implements Runnable {
             out.println(objectMapper.writeValueAsString(joinRoomMessage));
         } catch (JsonProcessingException e) {
             System.out.println("Error: create room could not be parsed");
+        }
+    }
+
+    private void startAcceptTest(){
+        Calendar currentTime = Calendar.getInstance();
+
+        Calendar targetTime = Calendar.getInstance();
+        targetTime.set(Calendar.HOUR_OF_DAY, 23);
+        targetTime.set(Calendar.MINUTE, 49);
+        targetTime.set(Calendar.SECOND, 30);
+
+        long timeDiffMillis = targetTime.getTimeInMillis() - currentTime.getTimeInMillis();
+
+        // Wait until the target time is reached
+        try {
+            Thread.sleep(timeDiffMillis);
+            Message toServer = new Message(0, MessageType.ACCEPT_FRIEND_TEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
+            out.println(objectMapper.writeValueAsString(toServer));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 

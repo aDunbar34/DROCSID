@@ -275,12 +275,25 @@ public class ServerConsumer extends Thread{
 
                     }
 
+                    case SEND_FRIEND_REQUEST_TEST -> {
+
+                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                            for (ClientData clientData: clientsInServer) {
+                                clientData.addIncomingFriendRequest(senderData.getUsername());
+                            }
+
+                        Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST_TEST, senderData.getUsername(), null, System.currentTimeMillis(), "Requests Sent");
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                    }
+
                     case ACCEPT_FRIEND -> {
                         String username = new String(message.getPayload());
                         ClientData targetClient = null;
                         Set<String> friend_list = senderData.getFriends();
                         Set<String> request_list = senderData.getIncomingFriendRequests();
-                        ClientData clientInRoom;
 
                         Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
 
@@ -322,6 +335,27 @@ public class ServerConsumer extends Thread{
                         Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "This User has been added to your Friends List: " + username);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+                    }
+
+                    case ACCEPT_FRIEND_TEST -> {
+                        String username = senderData.getUsername();
+                        Set<String> friend_list = senderData.getFriends();
+
+                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+
+                        synchronized (clientsInServer) {
+                            for (ClientData clientData: clientsInServer) {
+                                Set<String> sender_friend_list = clientData.getFriends();
+
+                                friend_list.add(clientData.getUsername());
+                                sender_friend_list.add(senderData.getUsername());
+                            }
+                        }
+
+                        Message response = new Message(0, MessageType.ACCEPT_FRIEND_TEST, senderData.getUsername(), null, System.currentTimeMillis(), "Test complete");
+                        byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                        nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
                     }
 
                     case ADD_MEMBERS -> {
