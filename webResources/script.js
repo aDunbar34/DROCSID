@@ -25,15 +25,7 @@ let initiatorHeartbeatInterval;
 let localStream;
 let finished = 0;
 
-navigator.mediaDevices
-  .getUserMedia({ video: true, audio: true })
-  .then((stream) => {
-    localStream = stream;
-    localStreamElem.srcObject = localStream;
-    localStream
-      .getTracks()
-      .forEach((track) => connection.addTrack(track, localStream));
-  });
+let socket;
 
 connection.oniceconnectionstatechange = (event) => {
   if (connection.iceConnectionState === "connected") {
@@ -64,55 +56,66 @@ connection.ontrack = (event) => {
   }
 };
 
-const socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
-window.addEventListener("unload", () => {
-  socket.close();
-  connection.close();
-});
+navigator.mediaDevices
+  .getUserMedia({ video: true, audio: true })
+  .then((stream) => {
+    localStream = stream;
+    localStreamElem.srcObject = localStream;
+    localStream
+      .getTracks()
+      .forEach((track) => connection.addTrack(track, localStream));
+  })
+  .then(() => {
+    socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
+    window.addEventListener("unload", () => {
+      socket.close();
+      connection.close();
+    });
 
-socket.onopen = (event) => {
-  sendIntroduction();
-  if (role === "initiator") {
-    initiatorHeartbeatInterval = setInterval(() => sendHeartbeat(), 1000);
-  }
-};
+    socket.onopen = (event) => {
+      sendIntroduction();
+      if (role === "initiator") {
+        initiatorHeartbeatInterval = setInterval(() => sendHeartbeat(), 1000);
+      }
+    };
 
-socket.onmessage = (event) => {
-  const response = JSON.parse(event.data);
-  switch (response.type) {
-    case "HEARTBEAT":
-      console.log("Heartbeat received");
-      console.log(response);
-      if (response.name === peerUsername && response.connected === true) {
-        console.log("Recipient is connected");
-        clearInterval(initiatorHeartbeatInterval);
-        sendOffer();
+    socket.onmessage = (event) => {
+      const response = JSON.parse(event.data);
+      switch (response.type) {
+        case "HEARTBEAT":
+          console.log("Heartbeat received");
+          console.log(response);
+          if (response.name === peerUsername && response.connected === true) {
+            console.log("Recipient is connected");
+            clearInterval(initiatorHeartbeatInterval);
+            sendOffer();
+          }
+          break;
+        case "SDP":
+          const sdp = response.content;
+          connection.setRemoteDescription(sdp);
+          console.log("Received SDP");
+          if (role === "recipient") {
+            sendAnswer();
+          }
+          break;
+        case "ICE":
+          const candidate = response.content;
+          connection.addIceCandidate(candidate);
+          console.log("Received new ICE candidate");
+          break;
+        case "FINISH":
+          if (response.sender === peerUsername) {
+            finished += 1;
+            console.log("Finish received");
+            if (finished == 2) {
+              socket.close();
+              console.log("Socket closed.");
+            }
+          }
       }
-      break;
-    case "SDP":
-      const sdp = response.content;
-      connection.setRemoteDescription(sdp);
-      console.log("Received SDP");
-      if (role === "recipient") {
-        sendAnswer();
-      }
-      break;
-    case "ICE":
-      const candidate = response.content;
-      connection.addIceCandidate(candidate);
-      console.log("Received new ICE candidate");
-      break;
-    case "FINISH":
-      if (response.sender === peerUsername) {
-        finished += 1;
-        console.log("Finish received");
-        if (finished == 2) {
-          socket.close();
-          console.log("Socket closed.");
-        }
-      }
-  }
-};
+    };
+  });
 
 const sendIntroduction = function () {
   const message = {
