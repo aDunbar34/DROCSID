@@ -151,11 +151,18 @@ public class ClientProducer implements Runnable {
             e.printStackTrace();
         }
 
+        String uri = "http://localhost:8080?initiator," + socket.getInetAddress().getHostAddress() + "," + username + "," + recipient;
+
         try {
-            Desktop.getDesktop().browse(new URI("http://localhost:8080?initiator," + socket.getInetAddress().getHostAddress() + "," + username + "," + recipient));
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(uri));
+            } else {
+                System.out.println("Browse action unsupported. Please open the following URL in your browser to stream with <" + recipient + ">: " + uri);
+            }
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
+
     }
 
 

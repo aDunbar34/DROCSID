@@ -83,8 +83,14 @@ public class ClientConsumer implements Runnable {
 
         System.out.println("User <" + initiator + "> is trying to stream to you");
 
+        String uri = "http://localhost:8080?recipient," + socket.getInetAddress().getHostAddress() + "," + username + "," + initiator;
+
         try {
-            Desktop.getDesktop().browse(new URI("http://localhost:8080?recipient," + socket.getInetAddress().getHostAddress() + "," + username + "," + initiator));
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(uri));
+            } else {
+                System.out.println("Browse action unsupported. Please open the following URL in your browser to stream with <" + initiator + ">: " + uri);
+            }
         } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
