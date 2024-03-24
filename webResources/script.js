@@ -20,11 +20,20 @@ const peerUsername = args[3];
 
 let initiatorHeartbeatInterval;
 
-connection.onopen = (event) => {
+if (role === "initiator") {
+  connection.dc = connection.createDataChannel("channel");
+}
+
+connection.dc.onopen = (event) => {
   connectionStatus.innerText = "Connection established";
 };
 
+connection.ondatachannel = (event) => {
+  connection.dc = event.channel;
+};
+
 connection.onicecandidate = (event) => {
+  console.log("Ice Candidate Event");
   if (event.candidate !== "") {
     sendICECandidate(event.candidate);
   }
