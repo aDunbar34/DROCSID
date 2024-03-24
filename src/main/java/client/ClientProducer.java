@@ -106,9 +106,8 @@ public class ClientProducer implements Runnable {
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\accept" -> handleAcceptRequest(commandArgs);
                 case "\\startHistoryTest" -> startHistoryTest(commandArgs);
-                case "\\startOnlineTest" -> startOnlineTest(commandArgs);
-                case "\\startSendTest" -> sendRequestsTest();
-                case "\\startAcceptTest" -> startAcceptTest();
+                case "\\startOnlineTest1" -> startOnlineTestJoiningLeaving();
+                case "\\startOnlineTest2" -> startOnlineTestReqOnline();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -173,16 +172,6 @@ public class ClientProducer implements Runnable {
         try{
             //Send message to add members to room
             Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), potentialFriend);
-            out.println(objectMapper.writeValueAsString(toServer));
-        } catch (JsonProcessingException e) {
-            System.out.println("Error: Friend Request could not be parsed");
-        }
-    }
-
-    private void sendRequestsTest(){
-        try{
-            //Send message to add members to room
-            Message toServer = new Message(0, MessageType.SEND_FRIEND_REQUEST_TEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
             out.println(objectMapper.writeValueAsString(toServer));
         } catch (JsonProcessingException e) {
             System.out.println("Error: Friend Request could not be parsed");
@@ -667,64 +656,42 @@ public class ClientProducer implements Runnable {
         }
     }
 
-    private void startAcceptTest(){
-        Calendar currentTime = Calendar.getInstance();
+    private void startOnlineTestJoiningLeaving() {
 
-        Calendar targetTime = Calendar.getInstance();
-        targetTime.set(Calendar.HOUR_OF_DAY, 23);
-        targetTime.set(Calendar.MINUTE, 49);
-        targetTime.set(Calendar.SECOND, 30);
+        String roomName = "onlineTest";
 
-        long timeDiffMillis = targetTime.getTimeInMillis() - currentTime.getTimeInMillis();
-
-        // Wait until the target time is reached
-        try {
-            Thread.sleep(timeDiffMillis);
-            Message toServer = new Message(0, MessageType.ACCEPT_FRIEND_TEST, username, chatRoomData.getChatRoomId(), System.currentTimeMillis());
-            out.println(objectMapper.writeValueAsString(toServer));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        // user leaving & joining room every odd millisecond
+        while (true) {
+            long time = System.currentTimeMillis();
+            if(time % 2 != 0) {
+                try {
+                    Thread.sleep(500);
+                    joinRoom(new String[]{"join", roomName});
+                    Thread.sleep(1); // wait 1 millisecond
+                    exitRoom();
+                    Thread.sleep(1); // wait 1 millisecond
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
-    private void startOnlineTest(String args[]) {
-        String roomName = "onlineTest";
-        System.out.println(args[1]);
+    private void startOnlineTestReqOnline() {
 
-        // arguments validation
-        if (!args[1].equals("even") && !args[1].equals("odd")) {
-            System.out.println("Invalid argument. Usage: \\startHistoryTest [even|odd]");
-            return;
-        }
-
-        // start a thread for leaving & joining room every odd millisecond
-        if (args[1].equals("odd")) {
-            Thread leaveJoinThread = new Thread(() -> {
-                while (true) {
-                    try {
-                        exitRoom();
-                        Thread.sleep(1); // wait 1 millisecond
-                        joinRoom(new String[]{"join", roomName});
-                        Thread.sleep(1); // wait 1 millisecond
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-            leaveJoinThread.start();
-        }
-
-        // request online status every even millisecond
+        // user requests online status every even millisecond
         while (true) {
-            try {
-                Thread.sleep(1); // wait 1 millisecond
-                if (args[1].equals("even")) {
+            long time = System.currentTimeMillis();
+            if (time % 2 == 0) {
+                try {
+                    Thread.sleep(500);
                     showOnline();
+                    Thread.sleep(1); // wait 1 millisecond
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
