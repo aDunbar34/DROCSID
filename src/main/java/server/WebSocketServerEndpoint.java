@@ -20,8 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebSocket
 public class WebSocketServerEndpoint {
 
-    private ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private static final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -63,20 +63,22 @@ public class WebSocketServerEndpoint {
                 case "SDP" -> {
                     String recipient = jsonMessage.get("recipient").asText();
                     if (!sessions.containsKey(recipient)) {
-                        System.out.println("WEBSOCKETS: SDP message received for unconnected user '" + recipient + "'");
+                        System.out.println("WEBSOCKETS: SDP message received for unconnected user <" + recipient + ">");
                         return;
                     }
                     Session recipientSession = sessions.get(recipient);
                     recipientSession.getRemote().sendString(message);
+                    System.out.println("WEBSOCKETS: SDP message sent to user <" + recipient + ">");
                 }
                 case "ICE" -> {
                     String recipient = jsonMessage.get("recipient").asText();
                     if (!sessions.containsKey(recipient)) {
-                        System.out.println("WEBSOCKETS: ICE message received for unconnected user '" + recipient + "'");
+                        System.out.println("WEBSOCKETS: ICE message received for unconnected user <" + recipient + ">");
                         return;
                     }
                     Session recipientSession = sessions.get(recipient);
                     recipientSession.getRemote().sendString(message);
+                    System.out.println("WEBSOCKETS: ICE message sent to user <" + recipient + ">");
                 }
             }
         } catch (JsonProcessingException e) {
