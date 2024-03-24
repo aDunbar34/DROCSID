@@ -20,6 +20,16 @@ const peerUsername = args[3];
 
 let initiatorHeartbeatInterval;
 
+connection.onopen = (event) => {
+  connectionStatus.innerText = "Connection established";
+};
+
+connection.onicecandidate = (event) => {
+  if (event.candidate !== "") {
+    sendICECandidate(event.candidate);
+  }
+};
+
 const socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
 window.addEventListener("unload", () => {
   socket.close();
@@ -118,14 +128,4 @@ const sendICECandidate = function (candidate) {
   };
   socket.send(JSON.stringify(message));
   console.log("Sent ICE candidate");
-};
-
-connection.onopen = (event) => {
-  connectionStatus.innerText = "Connection established";
-};
-
-connection.onicecandidate = (event) => {
-  if (event.candidate !== "") {
-    sendICECandidate(event.candidate);
-  }
 };
