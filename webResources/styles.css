@@ -10,3 +10,8 @@ body {
     justify-content: space-between;
     gap: 2vw;
 }
+
+#videos video {
+    height: 20vh;
+    width: 20vh;
+}

@@ -23,6 +23,7 @@ const remoteStreamElem = document.getElementById("remote-stream");
 
 let initiatorHeartbeatInterval;
 let localStream;
+let finished = 0;
 
 navigator.mediaDevices
   .getUserMedia({ video: true, audio: true })
@@ -44,9 +45,15 @@ connection.onicecandidate = (event) => {
   console.log("Ice Candidate Event");
   if (event.candidate) {
     sendICECandidate(event.candidate);
+    console.log(event.candidate);
   } else if (event.candidate === null) {
     console.log("ICE gathering finished.");
     sendFinish();
+    finished += 1;
+    if (finished == 2) {
+      socket.close();
+      console.log("Socket closed.");
+    }
   }
 };
 
@@ -96,8 +103,12 @@ socket.onmessage = (event) => {
       break;
     case "FINISH":
       if (response.sender === peerUsername) {
-        socket.close();
-        console.log("Finish received. Socket closed.");
+        finished += 1;
+        console.log("Finish received");
+        if (finished == 2) {
+          socket.close();
+          console.log("Socket closed.");
+        }
       }
   }
 };
