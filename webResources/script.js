@@ -60,6 +60,7 @@ connection.onicecandidate = (event) => {
 connection.ontrack = (event) => {
   if (event.streams[0]) {
     remoteStreamElem.srcObject = event.streams[0];
+    remoteStreamElem.play();
   }
 };
 
