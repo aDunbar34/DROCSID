@@ -18,24 +18,38 @@ const serverAddress = args[1];
 const username = args[2];
 const peerUsername = args[3];
 
+const localStreamElem = document.getElementById("local-stream");
+const remoteStreamElem = document.getElementById("remote-stream");
+
 let initiatorHeartbeatInterval;
+let localStream;
 
-if (role === "initiator") {
-  connection.dc = connection.createDataChannel("channel");
-}
+navigator.mediaDevices
+  .getUserMedia({ video: true, audio: true })
+  .then((stream) => {
+    localStream = stream;
+    localStreamElem.srcObject = localStream;
+    localStream
+      .getTracks()
+      .forEach((track) => connection.addTrack(track, localStream));
+  });
 
-connection.dc.onopen = (event) => {
-  connectionStatus.innerText = "Connection established";
-};
-
-connection.ondatachannel = (event) => {
-  connection.dc = event.channel;
+connection.oniceconnectionstatechange = (event) => {
+  if (connection.iceConnectionState === "connected") {
+    connectionStatus.innerText = "Connection established";
+  }
 };
 
 connection.onicecandidate = (event) => {
   console.log("Ice Candidate Event");
   if (event.candidate !== "") {
     sendICECandidate(event.candidate);
+  }
+};
+
+connection.ontrack = (event) => {
+  if (event.streams[0]) {
+    remoteStreamElem.srcObject = event.streams[0];
   }
 };
 

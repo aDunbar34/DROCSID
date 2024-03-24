@@ -4,3 +4,8 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+#videos {
+    display: flex;
+    justify-content: space-between;
+}
