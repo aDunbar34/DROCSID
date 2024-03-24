@@ -660,13 +660,12 @@ public class ClientProducer implements Runnable {
 
         String roomName = "onlineTest";
 
-        // start a thread for leaving & joining room every odd millisecond
+        // user leaving & joining room every even millisecond
         while (true) {
-
             long time = System.currentTimeMillis();
             if(time % 2 == 0) {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(500);
                     joinRoom(new String[]{"join", roomName});
                     Thread.sleep(1); // wait 1 millisecond
                     exitRoom();
@@ -681,12 +680,12 @@ public class ClientProducer implements Runnable {
 
     private void startOnlineTestReqOnline() {
 
-        // request online status every even millisecond
+        // user requests online status every odd millisecond
         while (true) {
             long time = System.currentTimeMillis();
             if (time % 2 != 0) {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(500);
                     showOnline();
                     Thread.sleep(1); // wait 1 millisecond
                 }
