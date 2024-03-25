@@ -106,7 +106,8 @@ public class ClientProducer implements Runnable {
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\accept" -> handleAcceptRequest(commandArgs);
                 case "\\startHistoryTest" -> startHistoryTest(commandArgs);
-                case "\\startOnlineTest" -> startOnlineTest(commandArgs);
+                case "\\startOnlineTest1" -> startOnlineTestJoiningLeaving();
+                case "\\startOnlineTest2" -> startOnlineTestReqOnline();
                 case "\\startSendTest" -> sendRequestsTest();
                 case "\\startAcceptTest" -> startAcceptTest();
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
@@ -664,6 +665,45 @@ public class ClientProducer implements Runnable {
             out.println(objectMapper.writeValueAsString(joinRoomMessage));
         } catch (JsonProcessingException e) {
             System.out.println("Error: create room could not be parsed");
+        }
+    }
+
+    private void startOnlineTestJoiningLeaving() {
+
+        String roomName = "online";
+
+        // user leaving & joining room every odd millisecond
+        while (true) {
+            // start a thread for leaving & joining room every odd millisecond
+            long time = System.currentTimeMillis();
+            if (time % 2 != 0) {
+                try {
+                    Thread.sleep(500);
+                    joinRoom(new String[]{"join", roomName});
+                    Thread.sleep(1); // wait 1 millisecond
+                    exitRoom();
+                    Thread.sleep(1); // wait 1 millisecond
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
+    private void startOnlineTestReqOnline() {
+
+        // request online status every even millisecond
+        while (true) {
+            long time = System.currentTimeMillis();
+            if (time % 2 == 0) {
+                try {
+                    Thread.sleep(500);
+                    showOnline();
+                    Thread.sleep(1); // wait 1 millisecond
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 
