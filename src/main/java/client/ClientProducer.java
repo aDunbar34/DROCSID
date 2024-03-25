@@ -670,6 +670,8 @@ public class ClientProducer implements Runnable {
 
     private void startOnlineTestJoiningLeaving() {
 
+        // call \startOnlineTest1
+
         String roomName = "online";
 
         // user leaving & joining room every odd millisecond
@@ -691,6 +693,8 @@ public class ClientProducer implements Runnable {
     }
 
     private void startOnlineTestReqOnline() {
+
+        // call \startOnlineTest2
 
         // request online status every even millisecond
         while (true) {
