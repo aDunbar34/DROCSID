@@ -18,11 +18,13 @@ const serverAddress = args[1];
 const username = args[2];
 const peerUsername = args[3];
 
-let localStreamElem = document.getElementById("local-stream");
-let remoteStreamElem = document.getElementById("remote-stream");
-const webcamRadio = document.getElementById("webcam-radio");
-const videoRadio = document.getElementById("video-radio");
-const filePicker = document.getElementById("file-picker");
+const localStreamElem = document.getElementById("local-stream");
+const remoteStreamElem = document.getElementById("remote-stream");
+const filePickerConstainer = document.getElementById("file-picker-container");
+const filePicker = document.createElement("input");
+filePicker.type = "file";
+filePicker.id = "file-picker";
+filePicker.accept = "video/*";
 
 let initiatorHeartbeatInterval;
 let localMediaStream;
@@ -56,15 +58,6 @@ connection.onicecandidate = (event) => {
 connection.ontrack = (event) => {
   console.log("Track event fired");
   if (event.streams[0]) {
-    const newRemoteStreamElem = document.createElement("video");
-    newRemoteStreamElem.id = "remote-stream";
-    newRemoteStreamElem.autoplay = true;
-
-    remoteStreamElem.style.display = "none";
-    remoteStreamElem.parentNode.appendChild(newRemoteStreamElem);
-    remoteStreamElem.parentNode.removeChild(remoteStreamElem);
-
-    remoteStreamElem = newRemoteStreamElem;
     remoteStreamElem.srcObject = event.streams[0];
     remoteStreamElem.play();
   }
@@ -122,70 +115,41 @@ const setupWebSockets = function () {
   };
 };
 
-navigator.mediaDevices
-  .getUserMedia({ video: true, audio: true })
-  .then((stream) => {
-    localMediaStream = stream;
-    localStreamElem.srcObject = localMediaStream;
-    localMediaStream
-      .getTracks()
-      .forEach((track) => connection.addTrack(track, localMediaStream));
-  })
-  .then(setupWebSockets);
+const camStreamSetup = function () {
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+      localMediaStream = stream;
+      localStreamElem.srcObject = localMediaStream;
+      localStreamElem.play();
+      localMediaStream
+        .getTracks()
+        .forEach((track) => connection.addTrack(track, localMediaStream));
+    })
+    .then(setupWebSockets);
+};
 
-webcamRadio.addEventListener("click", () => {
-  if (webcamFlag) {
-    return;
-  }
-  localStreamElem.muted = true;
-  localStreamElem.srcObject = localMediaStream;
+const videoStreamSetup = function () {
+  connectionStatus.innerText = "Select a video file to stream";
+  filePickerConstainer.append(filePicker);
+};
 
-  connection.getSenders().forEach((sender) => {
-    connection.removeTrack(sender);
-  });
-
-  localMediaStream
-    .getTracks()
-    .forEach((track) => connection.addTrack(track, localMediaStream));
-
-  webcamFlag = true;
-});
-
-videoRadio.addEventListener("click", () => {
-  if (!webcamFlag) {
-    return;
-  }
-
+filePicker.addEventListener("change", () => {
   if (filePicker.files.length === 0) {
     return;
   }
 
   const file = filePicker.files[0];
   if (!file.type.startsWith("video/")) {
+    connectionStatus.innerText = "Invalid file. Please choose another.";
     return;
   }
 
-  const newLocalStreamElem = document.createElement("video");
-  newLocalStreamElem.id = "local-stream";
-  newLocalStreamElem.autoplay = true;
-
-  localStreamElem.style.display = "none";
-  localStreamElem.parentNode.insertBefore(
-    newLocalStreamElem,
-    localStreamElem.nextSibling
-  );
-  localStreamElem.parentNode.removeChild(localStreamElem);
-
-  localStreamElem = newLocalStreamElem;
+  localStreamElem.loop = true;
+  localStreamElem.muted = false;
   localStreamElem.src = URL.createObjectURL(file);
 
-  connection.getSenders().forEach((sender) => {
-    connection.removeTrack(sender);
-  });
-
   localStreamElem.addEventListener("loadedmetadata", async () => {
-    console.log("Metadata Load Reached");
-
     const stream = localStreamElem.captureStream();
 
     stream.getTracks().forEach((track) => {
@@ -194,7 +158,22 @@ videoRadio.addEventListener("click", () => {
   });
 
   localStreamElem.play();
+  connectionStatus.innerText = "Establishing connection, please wait...";
+  setupWebSockets();
 });
+
+let camVideoChoice;
+while (camVideoChoice !== "cam" && camVideoChoice !== "video") {
+  camVideoChoice = window.prompt(
+    "Enter 'cam' to stream via a connected camera, or 'video' to stream a video file."
+  );
+}
+
+if (camVideoChoice === "cam") {
+  camStreamSetup();
+} else {
+  videoStreamSetup();
+}
 
 const sendIntroduction = function () {
   const message = {
