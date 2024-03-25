@@ -18,6 +18,7 @@ const serverAddress = args[1];
 const username = args[2];
 const peerUsername = args[3];
 
+const videosContainer = document.getElementById("videos");
 const localStreamElem = document.getElementById("local-stream");
 const remoteStreamElem = document.getElementById("remote-stream");
 const filePickerContainer = document.getElementById("file-picker-container");
@@ -33,9 +34,16 @@ let webcamFlag = true;
 
 let socket;
 
-connection.oniceconnectionstatechange = (event) => {
+connection.oniceconnectionstatechange = () => {
   if (connection.iceConnectionState === "connected") {
     connectionStatus.innerText = "Connection established";
+  }
+};
+
+connection.onconnectionstatechange = () => {
+  if (connection.iceConnectionState === "closed") {
+    videosContainer.removeChild(remoteStreamElem);
+    connectionStatus.innerText = "Connection closed";
   }
 };
 
@@ -65,7 +73,7 @@ connection.ontrack = (event) => {
 
 const setupWebSockets = function () {
   socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
-  window.addEventListener("unload", () => {
+  window.addEventListener("beforeunload", () => {
     socket.close();
     connection.close();
   });
@@ -150,7 +158,13 @@ filePicker.addEventListener("change", () => {
   localStreamElem.src = URL.createObjectURL(file);
 
   localStreamElem.addEventListener("loadedmetadata", async () => {
-    const stream = localStreamElem.captureStream();
+    let stream;
+
+    if (navigator.userAgent.includes("Firefox")) {
+      stream = localStreamElem.mozCaptureStream();
+    } else {
+      stream = localStreamElem.captureStream();
+    }
 
     stream.getTracks().forEach((track) => {
       connection.addTrack(track, stream);
