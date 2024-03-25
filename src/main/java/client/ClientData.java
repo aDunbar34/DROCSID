@@ -112,4 +112,19 @@ public class ClientData {
     public Set<String> getFriends() {return friends;}
 
     public void setFriends(Set<String> friends) {this.friends = friends;}
+
+    /**
+     * Adds someone as this users friend and removes the outgoing and incoming from that username
+     * @param username friends username
+     * @author Robbie Booth
+     */
+    public synchronized void addFriend(String username){
+        friends.add(username);
+        outgoingFriendRequests.remove(username);
+        incomingFriendRequests.remove(username);
+    }
+
+    public void addOutGoingRequest(String username){
+        outgoingFriendRequests.add(username);
+    }
 }

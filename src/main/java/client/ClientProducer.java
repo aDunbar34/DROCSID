@@ -107,7 +107,7 @@ public class ClientProducer implements Runnable {
                 case "\\online" -> showOnline();
                 case "\\friends" -> showFriends();
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
-                case "\\accept" -> handleAcceptRequest(commandArgs);
+                case "\\acceptRequest" -> handleAcceptRequest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -135,11 +135,16 @@ public class ClientProducer implements Runnable {
     private void handleAcceptRequest(String[] args) {
         if (args.length <= 1) {
             System.out.println("Incorrect number of arguments");
-            System.out.println("USAGE: \\accept <member>");
+            System.out.println("USAGE: \\acceptRequest <member>");
             return;
         }
 
         String potentialFriend = args[1];
+
+        if(potentialFriend.equals(username)){
+            System.out.println("You cannot be friends with yourself!");
+            return;
+        }
 
         try{
             //Send message to add members to room
@@ -169,6 +174,11 @@ public class ClientProducer implements Runnable {
         }
         // Get name of user to be sent request
         String potentialFriend = args[1];
+
+        if(potentialFriend.equals(username)){
+            System.out.println("You cannot be friends with yourself!");
+            return;
+        }
 
         //should error on server if user not in room
         try{
@@ -320,9 +330,13 @@ public class ClientProducer implements Runnable {
                     System.out.println("You've selected to view your friend requests");
                     viewFriendRequests();
                     System.out.println("To send a Friend Request do \\sendRequest <Username>");
-                    System.out.println("To Accept a Friend Request do \\accept <Username>");
+                    System.out.println("To Accept a Friend Request do \\acceptRequest <Username>");
                 }
                 case 5 ->{
+                    System.out.println("To see friends do \\friends");
+                    showFriends();
+                }
+                case 6 ->{
                     System.out.println("You've selected disconnect");
                     System.out.println("NOT IMPLEMENTED YET");//TODO implement
                     //disconnect
@@ -357,7 +371,8 @@ public class ClientProducer implements Runnable {
         System.out.println("2. Create room");
         System.out.println("3. Add user to room");
         System.out.println("4. View friend requests");
-        System.out.println("5. Disconnect");
+        System.out.println("5. View friends");
+        System.out.println("6. Disconnect");
         System.out.println("Enter number to select option:");
     }
 

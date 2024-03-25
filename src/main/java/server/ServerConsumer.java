@@ -238,19 +238,58 @@ public class ServerConsumer extends Thread{
                     case SEND_FRIEND_REQUEST -> {
                         String username = new String(message.getPayload());
 
-                        // Create user in history if they don't exist already and declare them as the target client
-                        History.createUser(username);
-                        ClientData targetClient = History.readUser(username);
+                        boolean becomeFriends = false;
 
-                        targetClient.addIncomingFriendRequest(senderData.getUsername());
+                        // Create user in history if they don't exist already and declare them as the target client
+                        ClientData connectedReciever = nonBlockingServer.getClientData(username);
+                        if(connectedReciever != null){
+                            synchronized (connectedReciever) {
+                                if(connectedReciever.getOutgoingFriendRequests().contains(senderData.getUsername())){//They have an outgoing to the person who sent one
+                                    becomeFriends = true;
+                                    connectedReciever.addFriend(senderData.getUsername());
+                                }else{
+                                    connectedReciever.addIncomingFriendRequest(senderData.getUsername());
+                                }
+                            }
+                        }else{
+                            History.createUser(username);
+                            ClientData targetClient = History.readUser(username);
+                            if(targetClient != null && targetClient.getOutgoingFriendRequests().contains(senderData.getUsername())){
+                                becomeFriends = true;
+                            }
+                        }
+
+                        synchronized (senderData){
+                            if(becomeFriends){
+                                senderData.addFriend(username);
+                            }else{
+                                senderData.addOutGoingRequest(username);
+                            }
+                        }
 
                         //Add to history
-                        History.sendFriendRequest(senderData.getUsername(), targetClient.getUsername());
+                        History.sendFriendRequest(senderData.getUsername(), username);
+
+                        //Create message to clients:
+                        String senderMessage = "Friend Request sent to: " + username;
+                        String receiverMessage = "You've recieved a friend request from: " + senderData.getUsername();
+                        if(becomeFriends){
+                            senderMessage = "You have become friends with: "+username;
+                            receiverMessage = "You have become friends with: "+senderData.getUsername();
+                        }
+
 
                         // Send Confirmation to sender
-                        Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), "Friend Request sent to: " + username);
+                        Message response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), senderMessage);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                        if(connectedReciever != null){
+                            // Send you've received request to receiver
+                            response = new Message(0, MessageType.SEND_FRIEND_REQUEST, senderData.getUsername(), null, System.currentTimeMillis(), receiverMessage);
+                            messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(connectedReciever.getUserChannel(), messageAsByteJSON);
+                        }
 
                     }
 
@@ -261,46 +300,45 @@ public class ServerConsumer extends Thread{
                         Set<String> request_list = senderData.getIncomingFriendRequests();
                         ClientData clientInRoom;
 
-                        Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
+                        ClientData clientInServer = nonBlockingServer.getClientData(username);
 
                         boolean requestExists = false;
-
-                        synchronized (clientsInServer) {
-                            for (ClientData clientData: clientsInServer) {
-                                if (clientData.getUsername().equals(username)) {
-                                    targetClient = clientData;
-                                    break;
-                                }
-                            }
+                        if(clientInServer!= null){
+                            targetClient = clientInServer;
                         }
 
                         synchronized (request_list) {
-                            for (String request : request_list) {
-                                if (username.equals(request)){
-                                    requestExists = true;
-                                    break;
-                                }
-                            }
+                            requestExists = request_list.contains(username);
                         }
 
                         if(!requestExists){
-                            Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "Request: "+ username + " doesn't exist!");
+                            Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "Request for "+ username + " doesn't exist!");
                             byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                             nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
                             break;
                         }
 
-                        Set<String> sender_friend_list = targetClient.getFriends();
-
-                        friend_list.add(targetClient.getUsername());
-                        sender_friend_list.add(senderData.getUsername());
+                        if(targetClient != null){
+                            synchronized (targetClient){
+                                targetClient.addFriend(senderData.getUsername());
+                            }
+                        }
+                        synchronized (senderData){
+                            senderData.addFriend(username);
+                        }
 
                         // Add to history
-                        History.acceptFriendRequest(targetClient.getUsername(), senderData.getUsername());
+                        History.acceptFriendRequest(username, senderData.getUsername());
 
-                        Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "This User has been added to your Friends List: " + username);
+                        Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "You have become friends with: " + username);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
                         nonBlockingServer.writeDataToClient(senderData.getUserChannel(), messageAsByteJSON);
+
+                        if(targetClient != null){//If user is online tell them you are now friends
+                            response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "You have become friends with: " + senderData.getUsername());
+                            messageAsByteJSON = objectMapper.writeValueAsBytes(response);
+                            nonBlockingServer.writeDataToClient(targetClient.getUserChannel(), messageAsByteJSON);
+                        }
                     }
 
                     case ADD_MEMBERS -> {
