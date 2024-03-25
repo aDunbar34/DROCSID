@@ -20,7 +20,7 @@ const peerUsername = args[3];
 
 const localStreamElem = document.getElementById("local-stream");
 const remoteStreamElem = document.getElementById("remote-stream");
-const filePickerConstainer = document.getElementById("file-picker-container");
+const filePickerContainer = document.getElementById("file-picker-container");
 const filePicker = document.createElement("input");
 filePicker.type = "file";
 filePicker.id = "file-picker";
@@ -131,7 +131,7 @@ const camStreamSetup = function () {
 
 const videoStreamSetup = function () {
   connectionStatus.innerText = "Select a video file to stream";
-  filePickerConstainer.append(filePicker);
+  filePickerContainer.append(filePicker);
 };
 
 filePicker.addEventListener("change", () => {
@@ -158,6 +158,7 @@ filePicker.addEventListener("change", () => {
   });
 
   localStreamElem.play();
+  filePickerContainer.removeChild(filePicker);
   connectionStatus.innerText = "Establishing connection, please wait...";
   setupWebSockets();
 });
