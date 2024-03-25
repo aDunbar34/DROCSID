@@ -674,16 +674,15 @@ public class ClientProducer implements Runnable {
         //\startOnlineTest1
 
         String roomName = "onlineTest";
-
+//        boolean inRoom = false;
         try{
             Thread.sleep(5000);
             while (true) {
                 long time = System.currentTimeMillis();
-                if (time % 2 == 0) {
-                    joinRoom(new String[]{"join", roomName});
-                    Thread.sleep(5); // wait 3 millisecond
+                if (time % 30 == 15) {
                     exitRoom();
-                    Thread.sleep(5);
+                    Thread.sleep(1);
+                    joinRoom(new String[]{"join", roomName});
                 }
             }
         } catch (InterruptedException e) {
@@ -700,10 +699,8 @@ public class ClientProducer implements Runnable {
             Thread.sleep(5000);
             while (true) {
                 long time = System.currentTimeMillis();
-                if (time % 2 == 0) {
-                    Thread.sleep(5);
+                if (time % 30 == 0) {
                     showOnline();
-                    Thread.sleep(5);
                 }
             }
         } catch (InterruptedException e) {

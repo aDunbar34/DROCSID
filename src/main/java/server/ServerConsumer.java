@@ -120,11 +120,11 @@ public class ServerConsumer extends Thread{
                             List<ClientData> clientsInRoom = nonBlockingServer.getClientsInRoom(currentRoom);
                             // Create the message to display as response
                             onlineStatuses = "Users in Room: \n";
-                            synchronized (clientsInRoom) {
+//                            synchronized (clientsInRoom) {
                                 for (ClientData clientInRoom: clientsInRoom) {
                                     onlineStatuses += "- " + clientInRoom.getUsername() + "\n";
                                 }
-                            }
+//                            }
 
                         } else if (senderData.getCurrentRoom() == null) {
                             Collection<ClientData> clientsInServer = nonBlockingServer.getClientsInServer();
