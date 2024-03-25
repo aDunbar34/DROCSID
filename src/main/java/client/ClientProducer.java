@@ -674,40 +674,37 @@ public class ClientProducer implements Runnable {
 
         String roomName = "online";
 
-        // user leaving & joining room every odd millisecond
-        while (true) {
-            // start a thread for leaving & joining room every odd millisecond
-            long time = System.currentTimeMillis();
-            if (time % 2 != 0) {
-                try {
-                    Thread.sleep(500);
+        try{
+            Thread.sleep(5000);
+            while (true) {
+                long time = System.currentTimeMillis();
+                if (time % 2 == 0) {
                     joinRoom(new String[]{"join", roomName});
                     Thread.sleep(1); // wait 1 millisecond
                     exitRoom();
-                    Thread.sleep(1); // wait 1 millisecond
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    Thread.sleep(1);
                 }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private void startOnlineTestReqOnline() {
 
         // call \startOnlineTest2
-
-        // request online status every even millisecond
-        while (true) {
-            long time = System.currentTimeMillis();
-            if (time % 2 == 0) {
-                try {
-                    Thread.sleep(500);
+        try{
+            Thread.sleep(5000);
+            while (true) {
+                long time = System.currentTimeMillis();
+                if (time % 2 == 0) {
+                    Thread.sleep(1);
                     showOnline();
-                    Thread.sleep(1); // wait 1 millisecond
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    Thread.sleep(1);
                 }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
