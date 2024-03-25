@@ -670,9 +670,10 @@ public class ClientProducer implements Runnable {
 
     private void startOnlineTestJoiningLeaving() {
 
-        // call \startOnlineTest1
+        //\join onlineTest
+        //\startOnlineTest1
 
-        String roomName = "online";
+        String roomName = "onlineTest";
 
         try{
             Thread.sleep(5000);
@@ -680,9 +681,9 @@ public class ClientProducer implements Runnable {
                 long time = System.currentTimeMillis();
                 if (time % 2 == 0) {
                     joinRoom(new String[]{"join", roomName});
-                    Thread.sleep(1); // wait 1 millisecond
+                    Thread.sleep(5); // wait 3 millisecond
                     exitRoom();
-                    Thread.sleep(1);
+                    Thread.sleep(5);
                 }
             }
         } catch (InterruptedException e) {
@@ -692,15 +693,17 @@ public class ClientProducer implements Runnable {
 
     private void startOnlineTestReqOnline() {
 
-        // call \startOnlineTest2
+        //\join onlineTest
+        //\startOnlineTest2
+
         try{
             Thread.sleep(5000);
             while (true) {
                 long time = System.currentTimeMillis();
                 if (time % 2 == 0) {
-                    Thread.sleep(1);
+                    Thread.sleep(5);
                     showOnline();
-                    Thread.sleep(1);
+                    Thread.sleep(5);
                 }
             }
         } catch (InterruptedException e) {
