@@ -108,6 +108,8 @@ public class ClientProducer implements Runnable {
                 case "\\friends" -> showFriends();
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\acceptRequest" -> handleAcceptRequest(commandArgs);
+                case "\\sendFriendsTest" -> sendFriendsTest(commandArgs);
+                case "\\acceptFriendsTest" -> acceptFriendsTest(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -620,6 +622,54 @@ public class ClientProducer implements Runnable {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private void acceptFriendsTest(String[] commandArgs) {
+        //first and second argument be time hours mins
+        Calendar currentTime = Calendar.getInstance();
+
+        Calendar targetTime = Calendar.getInstance();
+        targetTime.set(Calendar.HOUR_OF_DAY, Integer.parseInt(commandArgs[1]));
+        targetTime.set(Calendar.MINUTE, Integer.parseInt(commandArgs[2]));
+        targetTime.set(Calendar.SECOND, 00);
+        long timeDiffMillis = targetTime.getTimeInMillis() - currentTime.getTimeInMillis();
+
+        String[] people = Arrays.copyOfRange(commandArgs, 3, commandArgs.length);//\acceptFriendsTest 20 56 A B C D E
+        try {
+            Thread.sleep(timeDiffMillis);
+            for(String person: people){
+                handleAcceptRequest(new String[]{"\\acceptRequest", person});
+                Thread.sleep(1);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendFriendsTest(String[] commandArgs) {
+        Calendar currentTime = Calendar.getInstance();
+
+        Calendar targetTime = Calendar.getInstance();
+        targetTime.set(Calendar.HOUR_OF_DAY, Integer.parseInt(commandArgs[1]));
+        targetTime.set(Calendar.MINUTE, Integer.parseInt(commandArgs[2]));
+        targetTime.set(Calendar.SECOND, 00);
+
+        long timeDiffMillis = targetTime.getTimeInMillis() - currentTime.getTimeInMillis();
+
+        String[] people = Arrays.copyOfRange(commandArgs, 3, commandArgs.length);//\sendFriendsTest 20 56 F G H I J
+        System.out.println(people.length);
+        for(String person: people){
+            System.out.println(person);
+        }
+        try {
+            Thread.sleep(timeDiffMillis);
+            for(String person: people){
+                handleSendRequests(new String[]{"\\sendRequest", person});
+                Thread.sleep(1);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

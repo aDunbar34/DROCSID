@@ -118,8 +118,10 @@ public class ClientData {
      * @param username friends username
      * @author Robbie Booth
      */
-    public synchronized void addFriend(String username){
-        friends.add(username);
+    public void addFriend(String username){//removed synchronized
+        Set<String> newFriends = new HashSet<String>(getFriends());
+        newFriends.add(username);
+        friends = newFriends;
         outgoingFriendRequests.remove(username);
         incomingFriendRequests.remove(username);
     }

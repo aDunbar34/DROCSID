@@ -268,7 +268,7 @@ public class ServerConsumer extends Thread{
                         }
 
                         //Add to history
-                        History.sendFriendRequest(senderData.getUsername(), username);
+//                        History.sendFriendRequest(senderData.getUsername(), username);
 
                         //Create message to clients:
                         String senderMessage = "Friend Request sent to: " + username;
@@ -319,16 +319,16 @@ public class ServerConsumer extends Thread{
                         }
 
                         if(targetClient != null){
-                            synchronized (targetClient){
+                            //synchronized (targetClient){
                                 targetClient.addFriend(senderData.getUsername());
-                            }
+                            //}
                         }
                         synchronized (senderData){
                             senderData.addFriend(username);
                         }
 
                         // Add to history
-                        History.acceptFriendRequest(username, senderData.getUsername());
+//                        History.acceptFriendRequest(username, senderData.getUsername());
 
                         Message response = new Message(0, MessageType.ACCEPT_FRIEND, senderData.getUsername(), null, System.currentTimeMillis(), "You have become friends with: " + username);
                         byte[] messageAsByteJSON = objectMapper.writeValueAsBytes(response);
