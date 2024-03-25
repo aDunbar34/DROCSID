@@ -18,12 +18,16 @@ const serverAddress = args[1];
 const username = args[2];
 const peerUsername = args[3];
 
-const localStreamElem = document.getElementById("local-stream");
-const remoteStreamElem = document.getElementById("remote-stream");
+let localStreamElem = document.getElementById("local-stream");
+let remoteStreamElem = document.getElementById("remote-stream");
+const webcamRadio = document.getElementById("webcam-radio");
+const videoRadio = document.getElementById("video-radio");
+const filePicker = document.getElementById("file-picker");
 
 let initiatorHeartbeatInterval;
-let localStream;
+let localMediaStream;
 let finished = 0;
+let webcamFlag = true;
 
 let socket;
 
@@ -50,72 +54,147 @@ connection.onicecandidate = (event) => {
 };
 
 connection.ontrack = (event) => {
+  console.log("Track event fired");
   if (event.streams[0]) {
+    const newRemoteStreamElem = document.createElement("video");
+    newRemoteStreamElem.id = "remote-stream";
+    newRemoteStreamElem.autoplay = true;
+
+    remoteStreamElem.style.display = "none";
+    remoteStreamElem.parentNode.appendChild(newRemoteStreamElem);
+    remoteStreamElem.parentNode.removeChild(remoteStreamElem);
+
+    remoteStreamElem = newRemoteStreamElem;
     remoteStreamElem.srcObject = event.streams[0];
     remoteStreamElem.play();
   }
 };
 
+const setupWebSockets = function () {
+  socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
+  window.addEventListener("unload", () => {
+    socket.close();
+    connection.close();
+  });
+
+  socket.onopen = () => {
+    sendIntroduction();
+    if (role === "initiator") {
+      initiatorHeartbeatInterval = setInterval(() => sendHeartbeat(), 1000);
+    }
+  };
+
+  socket.onmessage = (event) => {
+    const response = JSON.parse(event.data);
+    switch (response.type) {
+      case "HEARTBEAT":
+        console.log("Heartbeat received");
+        console.log(response);
+        if (response.name === peerUsername && response.connected === true) {
+          console.log("Recipient is connected");
+          clearInterval(initiatorHeartbeatInterval);
+          sendOffer();
+        }
+        break;
+      case "SDP":
+        const sdp = response.content;
+        connection.setRemoteDescription(sdp);
+        console.log("Received SDP");
+        if (role === "recipient") {
+          sendAnswer();
+        }
+        break;
+      case "ICE":
+        const candidate = response.content;
+        connection.addIceCandidate(candidate);
+        console.log("Received new ICE candidate");
+        break;
+      case "FINISH":
+        if (response.sender === peerUsername) {
+          finished += 1;
+          console.log("Finish received");
+          if (finished == 2) {
+            socket.close();
+            console.log("Socket closed.");
+          }
+        }
+    }
+  };
+};
+
 navigator.mediaDevices
   .getUserMedia({ video: true, audio: true })
   .then((stream) => {
-    localStream = stream;
-    localStreamElem.srcObject = localStream;
-    localStream
+    localMediaStream = stream;
+    localStreamElem.srcObject = localMediaStream;
+    localMediaStream
       .getTracks()
-      .forEach((track) => connection.addTrack(track, localStream));
+      .forEach((track) => connection.addTrack(track, localMediaStream));
   })
-  .then(() => {
-    socket = new WebSocket(`ws://${serverAddress}:8081/socket/`);
-    window.addEventListener("unload", () => {
-      socket.close();
-      connection.close();
-    });
+  .then(setupWebSockets);
 
-    socket.onopen = (event) => {
-      sendIntroduction();
-      if (role === "initiator") {
-        initiatorHeartbeatInterval = setInterval(() => sendHeartbeat(), 1000);
-      }
-    };
+webcamRadio.addEventListener("click", () => {
+  if (webcamFlag) {
+    return;
+  }
+  localStreamElem.muted = true;
+  localStreamElem.srcObject = localMediaStream;
 
-    socket.onmessage = (event) => {
-      const response = JSON.parse(event.data);
-      switch (response.type) {
-        case "HEARTBEAT":
-          console.log("Heartbeat received");
-          console.log(response);
-          if (response.name === peerUsername && response.connected === true) {
-            console.log("Recipient is connected");
-            clearInterval(initiatorHeartbeatInterval);
-            sendOffer();
-          }
-          break;
-        case "SDP":
-          const sdp = response.content;
-          connection.setRemoteDescription(sdp);
-          console.log("Received SDP");
-          if (role === "recipient") {
-            sendAnswer();
-          }
-          break;
-        case "ICE":
-          const candidate = response.content;
-          connection.addIceCandidate(candidate);
-          console.log("Received new ICE candidate");
-          break;
-        case "FINISH":
-          if (response.sender === peerUsername) {
-            finished += 1;
-            console.log("Finish received");
-            if (finished == 2) {
-              socket.close();
-              console.log("Socket closed.");
-            }
-          }
-      }
-    };
+  connection.getSenders().forEach((sender) => {
+    connection.removeTrack(sender);
   });
+
+  localMediaStream
+    .getTracks()
+    .forEach((track) => connection.addTrack(track, localMediaStream));
+
+  webcamFlag = true;
+});
+
+videoRadio.addEventListener("click", () => {
+  if (!webcamFlag) {
+    return;
+  }
+
+  if (filePicker.files.length === 0) {
+    return;
+  }
+
+  const file = filePicker.files[0];
+  if (!file.type.startsWith("video/")) {
+    return;
+  }
+
+  const newLocalStreamElem = document.createElement("video");
+  newLocalStreamElem.id = "local-stream";
+  newLocalStreamElem.autoplay = true;
+
+  localStreamElem.style.display = "none";
+  localStreamElem.parentNode.insertBefore(
+    newLocalStreamElem,
+    localStreamElem.nextSibling
+  );
+  localStreamElem.parentNode.removeChild(localStreamElem);
+
+  localStreamElem = newLocalStreamElem;
+  localStreamElem.src = URL.createObjectURL(file);
+
+  connection.getSenders().forEach((sender) => {
+    connection.removeTrack(sender);
+  });
+
+  localStreamElem.addEventListener("loadedmetadata", async () => {
+    console.log("Metadata Load Reached");
+
+    const stream = localStreamElem.captureStream();
+
+    stream.getTracks().forEach((track) => {
+      connection.addTrack(track, stream);
+    });
+  });
+
+  localStreamElem.play();
+});
 
 const sendIntroduction = function () {
   const message = {

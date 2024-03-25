@@ -12,6 +12,18 @@
       <video id="local-stream" muted autoplay></video>
       <video id="remote-stream" autoplay></video>
     </div>
+    <div id="controls">
+      <div>
+        <input type="radio" id="webcam-radio" name="source" checked />
+        <label for="webcam-radio">Webcam</label>
+        <input type="radio" id="video-radio" name="source" />
+        <label for="video-radio">Video</label>
+      </div>
+      <div class="file-picker-container">
+        <label for="file-picker">Select a video</label>
+        <input type="file" id="file-picker" accept="video/*" />
+      </div>
+    </div>
     <script src="script.js" defer></script>
   </body>
 </html>
