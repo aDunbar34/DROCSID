@@ -14,13 +14,14 @@ import java.awt.event.WindowEvent;
  */
 public class VideoPlayer {
 
-    private final JFrame frame;
-    private final EmbeddedMediaPlayerComponent mediaPlayer;
+    private JFrame frame = null;
+    private EmbeddedMediaPlayerComponent mediaPlayer = null;
 
     public VideoPlayer() {
         // Check for VLC native libraries
         if (!new NativeDiscovery().discover()) {
             System.out.println("ERROR: VLC Media PLayer must be installed for this feature to work.");
+            return;
         }
 
         mediaPlayer = new EmbeddedMediaPlayerComponent();
