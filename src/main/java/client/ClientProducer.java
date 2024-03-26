@@ -466,8 +466,9 @@ public class ClientProducer implements Runnable {
 
         // Set up VideoPlayer and play video
         VideoPlayer videoPlayer = new VideoPlayer();
-        videoPlayer.playVideo(filePath.toString());
-
+        if (videoPlayer.getMediaPlayer() != null) {
+            videoPlayer.playVideo(filePath.toString());
+        }
     }
 
     /**

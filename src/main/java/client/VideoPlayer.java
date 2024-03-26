@@ -21,23 +21,26 @@ public class VideoPlayer {
         // Check for VLC native libraries
         if (!new NativeDiscovery().discover()) {
             System.out.println("ERROR: VLC Media PLayer must be installed for this feature to work.");
-            return;
+        } else {
+            mediaPlayer = new EmbeddedMediaPlayerComponent();
+
+            frame = new JFrame();
+            frame.setSize(800, 600);
+            frame.setContentPane(mediaPlayer);
+            frame.setTitle("Video Player");
+            frame.setLocationRelativeTo(null);
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            frame.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    mediaPlayer.release();
+                }
+            });
         }
+    }
 
-        mediaPlayer = new EmbeddedMediaPlayerComponent();
-
-        frame = new JFrame();
-        frame.setSize(800, 600);
-        frame.setContentPane(mediaPlayer);
-        frame.setTitle("Video Player");
-        frame.setLocationRelativeTo(null);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                mediaPlayer.release();
-            }
-        });
+    public EmbeddedMediaPlayerComponent getMediaPlayer() {
+        return mediaPlayer;
     }
 
     /**
