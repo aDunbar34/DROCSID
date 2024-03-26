@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import messageCommunication.Message;
 import messageCommunication.MessageType;
 import server.NonBlockingServerProducer;
-
+import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,6 +110,7 @@ public class ClientProducer implements Runnable {
                 case "\\friends" -> showFriends();
                 case "\\sendRequest" -> handleSendRequests(commandArgs);
                 case "\\acceptRequest" -> handleAcceptRequest(commandArgs);
+                case "\\stream" -> stream(commandArgs);
                 default -> System.out.println("Unrecognized command: '" + commandArgs[0] + "'.");
             }
         } else { // Treat input as message
@@ -208,6 +211,45 @@ public class ClientProducer implements Runnable {
         } catch (JsonProcessingException e) {
             System.out.print("Error: Showing friend list could not be parsed");
         }
+    }
+
+    /**
+     * Sends a stream signal and runs the streaming webapp
+     *
+     * @param args the args the command was called with
+     */
+    private void stream(String[] args) {
+
+        if (args.length != 2) {
+            System.out.println("Inccorect number of arguments.");
+            System.out.println("USAGE: \\stream <recipientUsername>");
+            return;
+        }
+
+        String recipient = args[1];
+
+        System.out.println("Beginning attempt to stream to peer <" + recipient + ">");
+
+        // Send stream signal to recipient
+        Message streamSignal = new Message(0, MessageType.STREAM_SIGNAL, username, chatRoomData.getChatRoomId(), System.currentTimeMillis(), recipient);
+        try {
+            out.println(objectMapper.writeValueAsString(streamSignal));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        String uri = "http://localhost:8080?initiator," + socket.getInetAddress().getHostAddress() + "," + username + "," + recipient;
+
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(uri));
+            } else {
+                System.out.println("Browse action unsupported. Please open the following URL in your browser to stream with <" + recipient + ">: " + uri);
+            }
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
@@ -426,6 +468,8 @@ public class ClientProducer implements Runnable {
     /**
      * Prints a list of files in the drocsidFiles directory.
      * If no such directory exists, it creates it.
+     *
+     * @author Euan Gilmour
      */
     private void showFiles() {
 
@@ -535,8 +579,9 @@ public class ClientProducer implements Runnable {
 
         // Set up VideoPlayer and play video
         VideoPlayer videoPlayer = new VideoPlayer();
-        videoPlayer.playVideo(filePath.toString());
-
+        if (videoPlayer.getMediaPlayer() != null) {
+            videoPlayer.playVideo(filePath.toString());
+        }
     }
 
     /**

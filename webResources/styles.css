@@ -1,0 +1,36 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#videos {
+    display: flex;
+    justify-content: space-between;
+    gap: 2vw;
+}
+
+#videos video {
+    height: 75vh;
+    width: 75vh;
+}
+
+#controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1vw;
+  }
+  
+  #controls > div {
+    display: flex;
+    gap: 1vw;
+  }
+  
+  .file-picker-container {
+    display: flex;
+    gap: 0.5vw;
+    align-items: center;
+  }
+  

@@ -3,6 +3,8 @@ package server;
 import messageCommunication.Message;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Non Blocking Server that creates {@link #numberOfProducerThreads} number of producer threads
@@ -51,6 +53,8 @@ public class Server implements Runnable {
     public static void main(String[] args) {
         int portNumber = Integer.parseInt(args[0]);
         Server server = new Server(portNumber);
+        WebSocketsServer webSocketsServer = new WebSocketsServer();
+        webSocketsServer.startServer();
         Thread serverThread = new Thread(server);
         serverThread.run();
         while(serverThread.isAlive()){

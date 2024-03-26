@@ -9,10 +9,13 @@ import customExceptions.InvalidMessageException;
 import messageCommunication.Message;
 import messageCommunication.UserMessage;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,6 +73,7 @@ public class ClientConsumer implements Runnable {
                     case SEND_FRIEND_REQUEST -> handleSendFriendRequests(messageParsed);
                     case FRIEND_REQUEST_LIST -> handleFriendRequestList(messageParsed);
                     case ACCEPT_FRIEND -> handleAcceptFriendRequests(messageParsed);
+                    case STREAM_SIGNAL -> handleStreamSignal(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
@@ -131,6 +135,33 @@ public class ClientConsumer implements Runnable {
 
     private void printUserMessage(UserMessage message){
         System.out.println(message.getSenderId() + " "+dateFormat.format(message.getTimestamp())+"> " +message.getMessage());
+    }
+
+    /**
+     * Sets up web app for streaming
+     *
+     * @param message the message
+     *
+     * @author Euan Gilmour
+     */
+    private void handleStreamSignal(Message message) {
+
+        String username = message.getTextMessage();
+        String initiator = message.getSenderId();
+
+        System.out.println("User <" + initiator + "> is trying to stream to you");
+
+        String uri = "http://localhost:8080?recipient," + socket.getInetAddress().getHostAddress() + "," + username + "," + initiator;
+
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI(uri));
+            } else {
+                System.out.println("Browse action unsupported. Please open the following URL in your browser to stream with <" + initiator + ">: " + uri);
+            }
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

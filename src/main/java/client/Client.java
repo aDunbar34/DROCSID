@@ -31,12 +31,15 @@ public class Client {
                     """);
         System.out.println("You are now experiencing DROCSID");
 
+        // Set up web server
+        ClientWebServer clientWebServer = new ClientWebServer();
+        clientWebServer.startServer();
 
         String hostname = args[0];//ip address of server or localhost
         int portNo = Integer.parseInt(args[1]);
         String username = args[2]; //used to uniquely identify user
 
-        System.out.println("Attempting to connect to client '" + hostname + "' on port " + portNo + "...");
+        System.out.println("Attempting to connect to server '" + hostname + "' on port " + portNo + "...");
         try (Socket socket = new Socket(hostname, portNo)) {
             System.out.println("Connection established! Enjoy your chat!");
             chatLoop(socket, username);
