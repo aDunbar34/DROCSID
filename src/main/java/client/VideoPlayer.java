@@ -19,7 +19,10 @@ public class VideoPlayer {
 
     public VideoPlayer() {
         // Check for VLC native libraries
-        new NativeDiscovery().discover();
+        if (!new NativeDiscovery().discover()) {
+            System.out.println("ERROR: VLC Media PLayer must be installed for this feature to work.");
+        }
+
         mediaPlayer = new EmbeddedMediaPlayerComponent();
 
         frame = new JFrame();
