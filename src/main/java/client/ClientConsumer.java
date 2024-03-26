@@ -2,10 +2,12 @@ package client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import customExceptions.InvalidMessageException;
 import messageCommunication.Message;
+import messageCommunication.UserMessage;
 
 import java.awt.*;
 import java.io.File;
@@ -14,6 +16,10 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Listens to the servers socket {@link #socket} and outputs the appropriate message to the users terminal if message received
@@ -26,6 +32,7 @@ public class ClientConsumer implements Runnable {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private ChatRoomData chatRoomData;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     public ClientConsumer(Socket socket, ChatRoomData chatRoomData) {
         this.socket = socket;
@@ -58,15 +65,76 @@ public class ClientConsumer implements Runnable {
                     case CREATE_ROOM -> handleCreateRoom(messageParsed);
                     case ADD_MEMBERS -> handleAddMembersToRoom(messageParsed);
                     case TEXT -> handleTextMessage(messageParsed);
+                    case HISTORY -> handleHistory(messageParsed);
                     case FILE_LISTEN_SIGNAL -> handleFileListenSignalMessage(messageParsed);
                     case FILE_RECEIVE_SIGNAL -> handleFileReceiveSignalMessage(messageParsed);
                     case ONLINE_STATUSES -> handleOnlineStatuses(messageParsed);
+                    case FRIENDS_LIST -> handleFriendList(messageParsed);
+                    case SEND_FRIEND_REQUEST -> handleSendFriendRequests(messageParsed);
+                    case FRIEND_REQUEST_LIST -> handleFriendRequestList(messageParsed);
+                    case ACCEPT_FRIEND -> handleAcceptFriendRequests(messageParsed);
                     case STREAM_SIGNAL -> handleStreamSignal(messageParsed);
                 }
             }
         } catch (IOException | InvalidMessageException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Prints a list of users in the clients friend request list
+     *
+     * @param messageParsed display of friend request list
+     *
+     * @author Adam Dunbar
+     */
+
+    private void handleFriendRequestList(Message messageParsed) { System.out.println(messageParsed.getTextMessage());}
+
+    private void handleSendFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
+
+    /**
+     * Prints a message that confirms the friend request has been accepted
+     *
+     * @author Lewis Brogan
+     */
+
+    private void handleAcceptFriendRequests(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
+
+    /**
+     * Prints a list of users in the clients friend list
+     *
+     * @param messageParsed display of friend list
+     *
+     * @author Adam Dunbar
+     */
+    private void handleFriendList(Message messageParsed) {System.out.println(messageParsed.getTextMessage());}
+
+    /**
+     * Takes a history of all the messages and outputs them on the screen
+     *
+     * @param messageParsed history message from server
+     */
+    private void handleHistory(Message messageParsed) {
+        List<UserMessage> historyMessages = new ArrayList<>();
+        try{
+            historyMessages = objectMapper.readValue(messageParsed.getPayload(), new TypeReference<List<UserMessage>>() {});
+        } catch (JsonProcessingException e) {
+            System.out.println("Error reading history messages for room: "+messageParsed.getTargetId());
+            return;
+        } catch (IOException e) {
+            System.out.println("Error reading history messages for room: "+messageParsed.getTargetId());
+            return;
+        }
+        //Sort by timestamp
+        Collections.sort(historyMessages);
+
+        //Print the messages
+        historyMessages.stream().forEach(message -> printUserMessage(message));
+    }
+
+    private void printUserMessage(UserMessage message){
+        System.out.println(message.getSenderId() + " "+dateFormat.format(message.getTimestamp())+"> " +message.getMessage());
     }
 
     /**
@@ -186,7 +254,7 @@ public class ClientConsumer implements Runnable {
      * @author Robbie Booth
      */
     private void handleTextMessage(Message message) {
-        System.out.println(message.getSenderId()+"> " + message.getTextMessage());
+        printUserMessage(new UserMessage(message.getSenderId(), message.getTimestamp(), message.getTextMessage()));
     }
 
     /**

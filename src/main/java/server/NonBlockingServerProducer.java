@@ -1,6 +1,5 @@
 package server;
 
-import client.Client;
 import client.ClientData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +37,9 @@ public class NonBlockingServerProducer implements Runnable {
         queueOfMessageToBeRead = queue;
         connectedClients = new HashMap<String, ClientData>();
         this.portNumber = portNumber;
-        this.allRooms = new HashSet<>();
+        Collection<String> rooms = History.readAllRoomNames();
+        System.out.println("Loaded rooms from history: "+String.join(", ", rooms));
+        this.allRooms = new HashSet<>(rooms);
     }
 
     @Override
@@ -221,7 +222,21 @@ public class NonBlockingServerProducer implements Runnable {
             if (connectedClients.containsKey(username)) {
                 return;
             }
-            ClientData clientData = new ClientData(username, clientChannel, new HashSet<>());
+            ClientData clientData;
+            try{
+                clientData = History.readUser(username);
+                if(clientData == null){
+                    clientData = new ClientData(username, clientChannel, new HashSet<>());
+                    History.createUser(username); //Create user if it doesn't exist. Else this does nothing
+                }else{
+                    //set user channel as it will be null
+                    clientData.setUserChannel(clientChannel);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                clientData = new ClientData(username, clientChannel, new HashSet<>());
+            }
+
             connectedClients.put(username, clientData);
         }
     }
@@ -235,10 +250,12 @@ public class NonBlockingServerProducer implements Runnable {
      */
     public void writeDataToClient(SocketChannel clientChannel, byte[] data) throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(data);
-        System.out.println(buffer);
         clientChannel.write(buffer);
         System.out.println("Messaged Client");
     }
+
+    //File operations:
+
 
 
 }
