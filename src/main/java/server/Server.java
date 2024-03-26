@@ -53,6 +53,8 @@ public class Server implements Runnable {
     public static void main(String[] args) {
         int portNumber = Integer.parseInt(args[0]);
         Server server = new Server(portNumber);
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
         WebSocketsServer webSocketsServer = new WebSocketsServer();
         webSocketsServer.startServer();
         Thread serverThread = new Thread(server);

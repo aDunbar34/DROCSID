@@ -32,6 +32,8 @@ public class Client {
         System.out.println("You are now experiencing DROCSID");
 
         // Set up web server
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
         ClientWebServer clientWebServer = new ClientWebServer();
         clientWebServer.startServer();
 
