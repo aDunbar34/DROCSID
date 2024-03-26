@@ -39,7 +39,7 @@ public class Client {
         int portNo = Integer.parseInt(args[1]);
         String username = args[2]; //used to uniquely identify user
 
-        System.out.println("Attempting to connect to client '" + hostname + "' on port " + portNo + "...");
+        System.out.println("Attempting to connect to server '" + hostname + "' on port " + portNo + "...");
         try (Socket socket = new Socket(hostname, portNo)) {
             System.out.println("Connection established! Enjoy your chat!");
             chatLoop(socket, username);
