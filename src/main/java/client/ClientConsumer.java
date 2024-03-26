@@ -158,8 +158,10 @@ public class ClientConsumer implements Runnable {
             return;
         }
 
-        String newRoom = messageParsed.getTargetId();
-        chatRoomData.setChatRoomId(newRoom);
+//        synchronized (chatRoomData) {
+            String newRoom = messageParsed.getTargetId();
+            chatRoomData.setChatRoomId(newRoom);
+//        }
 
         if(messageParsed.getTargetId() == null){
             System.out.println("Room successfully left!");

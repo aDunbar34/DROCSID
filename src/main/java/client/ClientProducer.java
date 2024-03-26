@@ -114,12 +114,12 @@ public class ClientProducer implements Runnable {
                 //disconnect
 
             }
-            synchronized (chatRoomData) {
+//            synchronized (chatRoomData) {
                 if (chatRoomData.getChatRoomId() == null) {
                     parseHomePage(userInput);
                 } else {
                     sendTextMessage(userInput);
-                }
+//                }
             }
         }
     }
@@ -630,20 +630,23 @@ public class ClientProducer implements Runnable {
     }
 
     private void startMultiRoomTest(String args[]){
-        //\startMultiRoomTest multi
+        //\startMultiRoomTest testMulti
         String room = args[1];
         try {
             while (true) {
                 joinRoom(args);
-                Thread.sleep(2);
-                sendTextMessage("im in room: " + room);
-                Thread.sleep(2);
+                Thread.sleep(1);
+                parseInput("im in room: " + room);
+                Thread.sleep(1);
                 exitRoom();
-                Thread.sleep(2);
+                Thread.sleep(1);
             }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
 }
