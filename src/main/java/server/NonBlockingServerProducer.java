@@ -70,7 +70,7 @@ public class NonBlockingServerProducer implements Runnable {
                         try{
                             queueOfMessageToBeRead.put(getMessageFromKey(key));//gets the message and adds it to the queue for consumers
                         }catch (InvalidMessageException e){
-                            e.printStackTrace();
+                            System.out.println("Message is empty!");
                         }catch (SocketException e){
                             closeConnection(key);//on the connection exit of a client it closes that connection
                         }
@@ -79,7 +79,7 @@ public class NonBlockingServerProducer implements Runnable {
                 }
             }
         } catch (ClosedChannelException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (ClientDisconnectException e) {
@@ -181,10 +181,11 @@ public class NonBlockingServerProducer implements Runnable {
 
         if (bytesRead == -1) {
             // Connection closed by client
-            key.cancel();
-            clientChannel.close();
-            System.out.println("client.Client disconnected: " + clientChannel.getRemoteAddress());
-            throw new ClientDisconnectException("client.Client has been disconnected");
+//            key.cancel();
+//            clientChannel.close();
+//            System.out.println("client.Client disconnected: " + clientChannel.getRemoteAddress());
+//            throw new ClientDisconnectException("client.Client has been disconnected");
+            closeConnection(key);
         } else if (bytesRead > 0) {
             buffer.flip();
             byte[] data = new byte[buffer.remaining()];
