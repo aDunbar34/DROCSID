@@ -43,7 +43,7 @@ public class ClientConsumer implements Runnable {
     public void run() {
         try {
             InputStream inputStream = socket.getInputStream();
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[10240];
             int bytesRead;
 
             System.out.println("Waiting for input");
